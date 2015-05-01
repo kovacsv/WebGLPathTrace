@@ -1,0 +1,314 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+	 "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+
+	<meta http-equiv="content-type" content="text/html;charset=utf-8">
+	<script type="text/javascript" src="../include/jsmodeler.js"></script>
+	<script type="text/javascript" src="../include/gputracer.js"></script>
+	<title>Example</title>
+	
+	<style>
+		html, body
+		{
+			margin : 5px;
+			padding : 0px;
+		}
+	</style>
+	
+	<script id="fragmentshader" type="x-shader/fragment">
+		precision highp float;
+
+		varying vec2 vVertexPosition;
+		uniform float uSize;
+
+		#define EPS 0.000005
+		#define BIGEPS 0.005
+		#define PI 3.1415926535897932384626433832795
+		#define INF 10e10
+
+		uniform sampler2D uOriginalTextureSampler;
+		uniform vec3 uCameraData[3];
+		uniform vec3 uLightPosition;
+		uniform float uLightRadius;
+		uniform float uIteration;
+		uniform float uShapeData1[6];
+		uniform float uShapeData2[6];
+		uniform int uPreview;
+
+		struct Camera
+		{
+			vec3 eye;
+			vec3 center;
+			vec3 up;
+		};
+
+		struct Ray
+		{
+			vec3 origin;
+			vec3 direction;
+			float length;
+		};
+
+		struct Intersection
+		{
+			vec3 position;
+			float distance;
+			vec3 color;
+		};
+		
+		float Random (vec2 seed)
+		{
+			vec2 theSeed = seed + vec2 (uIteration, -uIteration);
+			return fract (sin (dot (theSeed, vec2 (12.9898,78.233))) * 43758.5453);
+		}
+
+		vec3 Shading (in vec3 shadedPoint, in vec3 shadedPointNormal, in vec3 lightPosition, in vec3 materialDiffuseColor)
+		{
+			float lightDiffuseIntensity = 1.0;
+			vec3 lightDirection = normalize (lightPosition - shadedPoint);
+			float diffuseCoeff = max (dot (lightDirection, shadedPointNormal), 0.0);
+			vec3 diffuseColor = materialDiffuseColor * lightDiffuseIntensity;
+			return diffuseColor * diffuseCoeff;
+		}
+
+		float PointBoxDistance (vec3 point, vec3 origin, vec3 size)
+		{
+			vec3 offseted = point - origin;
+			vec3 d = abs (offseted) - size;
+			return min (max (d.x, max (d.y, d.z)), 0.0) + length (max (d, 0.0));
+		}
+
+		float PointSphereDistance (in vec3 point, in vec3 origin, in float radius)
+		{
+			vec3 offseted = point - origin;
+			return length (offseted) - radius;
+		}
+
+		float PointCylinderDistance (in vec3 point, in vec3 origin, in float radius, in float height)
+		{
+			vec3 offseted = point - origin;
+			float distance = length (offseted.xy) - radius;
+			distance = max (distance, -offseted.z - height);
+			distance = max (distance, offseted.z - height);
+			return distance;
+		}
+	
+		float PointTorusDistance (in vec3 point, in vec3 origin, float outerRadius, float innerRadius)
+		{
+			vec3 offseted = point - origin;
+			return length (vec2 (length (offseted.xy) - outerRadius, offseted.z)) - innerRadius;
+		}
+
+		float DistanceEstimation (in vec3 point)
+		{
+			const float power = 8.0;
+			float r = 0.0;
+			float dr = 1.0;
+			
+			vec3 currentPoint = point;
+			for (int i = 0; i < 7; i++) {
+				r = length (currentPoint);
+				if (r > 2.0) {
+					break;
+				}
+				float theta = atan (currentPoint.y / currentPoint.x);
+				float phi = asin (currentPoint.z / r);
+				dr = pow (r, power - 1.0) * dr * power + 1.0;
+				
+				r = pow (r, power);
+				theta = theta * power;
+				phi = phi * power;
+				
+				currentPoint = point + r * vec3 (cos (theta) * cos (phi), sin (theta) * cos (phi), sin (phi));
+			}
+			return 0.5 * log (r) * r / dr;
+		}
+
+		vec3 CalculateNormal (in vec3 point)
+		{
+			vec3 xDir = vec3 (EPS, 0.0, 0.0);
+			vec3 yDir = vec3 (0.0, EPS, 0.0);
+			vec3 zDir = vec3 (0.0, 0.0, EPS);
+			vec3 normal = vec3 (
+				DistanceEstimation (point + xDir) - DistanceEstimation (point - xDir),
+				DistanceEstimation (point + yDir) - DistanceEstimation (point - yDir),
+				DistanceEstimation (point + zDir) - DistanceEstimation (point - zDir)
+			);
+			return normalize (normal);
+		}
+
+		Intersection RayModelIntersection (in Ray ray)
+		{
+			Intersection result;
+			result.distance = INF;
+			const int maxSteps = 100;
+			const float maxDistance = 10.0;
+			
+			vec3 shadedColor = vec3 (0.0, 0.0, 0.0);
+			int iteration = 0;
+			float distance = 0.0;
+			for (int i = 0; i <= maxSteps; i++) {
+				vec3 currentPoint = ray.origin + ray.direction * distance;
+				float currentDistance = DistanceEstimation (currentPoint);
+				distance += currentDistance;
+				result.position = currentPoint;
+				result.distance = distance;
+				iteration = i;
+				if (currentDistance < EPS || distance > maxDistance) {
+					break;
+				}
+
+			}
+
+			float ratio = 1.2 - float (iteration) / float (maxSteps);
+			result.color = vec3 (ratio, ratio, ratio);
+			if (distance > maxDistance) {
+				result.distance = INF;
+			}
+			return result;
+		}
+
+		vec3 GetReflectedDirection (in vec3 direction, in vec3 normal)
+		{
+			float dotProduct = dot (normal, direction);
+			vec3 reflected = direction - normal * 2.0 * dotProduct;
+			return normalize (reflected);
+		}
+
+		vec3 RandomDirOnSphere (in vec2 seed)
+		{
+			vec2 random = vec2 (Random (seed), Random (seed * 2.0)) * 6.283;
+			vec3 randomDir = vec3 (sin (random.x) * vec2 (sin (random.y), cos (random.y)), cos (random.x));
+			return normalize (randomDir);
+		}
+
+		vec3 TraceRay (in Ray ray, in Camera camera)
+		{
+			vec3 backgroundColor = vec3 (0.8, 0.8, 0.8);
+			Intersection intersection = RayModelIntersection (ray);
+			if (intersection.distance == INF) {
+				return backgroundColor;
+			}
+			Ray lightRay;
+			vec3 randomLightPoint = uLightPosition + RandomDirOnSphere (intersection.position.xy) * uLightRadius;
+			vec3 lightRayDirection = normalize (randomLightPoint - intersection.position);
+			lightRay.origin = intersection.position + lightRayDirection * BIGEPS;
+			lightRay.direction = lightRayDirection;
+			lightRay.length = length (randomLightPoint - intersection.position);
+			Intersection lightIntersection = RayModelIntersection (lightRay);
+			vec3 shadedColor = vec3 (0.0, 0.0, 0.0);
+			if (lightIntersection.distance == INF) {
+				vec3 intersectionNormal = CalculateNormal (intersection.position);
+				vec3 directLightColor = Shading (intersection.position, intersectionNormal, randomLightPoint, intersection.color);
+				shadedColor += intersection.color * directLightColor;
+			}
+			return shadedColor;
+		}
+
+		Ray GetRay (in vec2 vertexPosition, in Camera camera, in float iteration)
+		{
+			vec3 eyeCenterDir = normalize (camera.center - camera.eye);
+			vec3 horizontalDir = normalize (cross (eyeCenterDir, camera.up));
+			vec3 verticalDir = normalize (cross (horizontalDir, eyeCenterDir ));
+
+			float fieldOfView = PI / 3.0; // 60 degree
+			float cameraDistance = 1.0 / tan (fieldOfView / 2.0);
+			vec3 endPosition = camera.eye + eyeCenterDir * cameraDistance;
+			
+			float randomX = Random (vVertexPosition);
+			float randomY = Random (-vVertexPosition);
+			float pixelSize = 2.0 / uSize;
+			endPosition = endPosition + horizontalDir * (vertexPosition.x + randomX * pixelSize);
+			endPosition = endPosition + verticalDir * (vertexPosition.y + randomY * pixelSize);
+			
+			Ray result;
+			result.origin = camera.eye;
+			result.direction = normalize (endPosition - camera.eye);
+			result.length = INF;
+			return result;
+		}
+
+		void main (void)
+		{
+			Camera camera;
+			camera.eye = uCameraData[0];
+			camera.center = uCameraData[1];
+			camera.up = uCameraData[2];
+			
+			Ray ray = GetRay (vVertexPosition, camera, uIteration);
+			vec3 shadedColor = TraceRay (ray, camera);
+			
+			vec2 originalPosition = (vVertexPosition + vec2 (1.0, 1.0)) / 2.0;;
+			vec3 originalColor = texture2D (uOriginalTextureSampler, originalPosition).xyz;
+			float weight = uIteration / (uIteration + 1.0);
+			gl_FragColor = vec4 (mix (shadedColor, originalColor, weight), 1.0);
+		}
+	</script>
+	
+	<script type="text/javascript">
+		var gpuTracer = null;
+		
+		function Compile ()
+		{
+			var errorDiv = document.getElementById ('error');
+			errorDiv.innerHTML = '';
+
+			var fragmentShaderTag = document.getElementById ('fragmentshader');
+			var fragmentShader = fragmentShaderTag.childNodes[0].nodeValue;
+
+			gpuTracer = new GPUTracer ();
+			var canvas = document.getElementById ('example');
+			
+			var camera = new JSM.Camera (
+				new JSM.Coord (4, 1, 2),
+				new JSM.Coord (0, 0, 0),
+				new JSM.Coord (0, 0, 1)
+			);
+			
+			var maxIteration = 256;
+
+			var timer = new JSM.Timer ();
+			timer.Start ();
+			gpuTracer.Init (canvas, camera, maxIteration);
+			gpuTracer.Compile (fragmentShader, function (error) {
+				errorDiv.innerHTML += error.replace ('\n', '<br>');
+			});
+			timer.Stop ();
+			errorDiv.innerHTML += 'Compile time: ' + timer.Result () + '<br>';
+			
+			gpuTracer.SetUniformVector ('uLightPosition', [4.0, 2.0, 3.0]);
+			gpuTracer.SetUniformFloat ('uLightRadius', 0.5);
+			
+			gpuTracer.Start ();
+		}
+
+		function TextAreaKeyDown (event)
+		{
+			if (event.which == 9) {
+				event.preventDefault ();
+				var selectionStart = this.selectionStart;
+				this.value = this.value.substring (0, this.selectionStart) + '\t' + this.value.substring (this.selectionEnd);
+				this.selectionEnd = selectionStart + 1; 
+			}
+		}
+		
+	    window.onload = function ()
+		{
+			var fragmentShader = document.getElementById ('fragmentshader');
+			fragmentShader.onkeydown = TextAreaKeyDown;
+
+			Compile ();			
+		}
+	</script>
+
+</head>
+
+<body>
+	<div id="error"></div>
+	<canvas id="example" width="512" height="512"></canvas>
+</body>
+
+</html>
