@@ -15,9 +15,15 @@ div.frame
 div.title
 {
 	text-align : center;
-	font-size : 27px;
+	font-size : 25px;
 	font-weight : bold;
-	margin : 40px 0px;
+	margin : 30px 0px;
+}
+
+div.text
+{
+	text-align : justify;
+	margin : 30px 0px;
 }
 
 div.container
@@ -73,7 +79,7 @@ div.selectitem
 div.selectitem.selected
 {
 	color : #222222;
-	background : #dddddd;
+	background : #eeeeee;
 	border : 1px solid #cccccc;
 }
 
@@ -96,11 +102,22 @@ div.slider
 div.slidercontent
 {
 	color : #000000;
-	background : #dddddd;
+	background : #eeeeee;
 	height : 15px;
 }
 
 canvas
 {
-	margin : 0px;
+}
+
+a
+{
+	color : #225588;
+	background : transparent;
+	text-decoration : none;
+}
+
+a:hover
+{
+	text-decoration : underline;
 }
