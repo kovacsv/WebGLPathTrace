@@ -5,13 +5,13 @@ DistanceField = function ()
 	this.settings = null;
 };
 
-DistanceField.prototype.Init = function (controlsElem, fragmentShaderElem)
+DistanceField.prototype.Init = function (canvasElem, controlsElem, fragmentShaderElem)
 {
 	if (!this.InitUserInterface (controlsElem)) {
 		return false;
 	}
 	
-	if (!this.InitRenderer (fragmentShaderElem)) {
+	if (!this.InitRenderer (canvasElem, fragmentShaderElem)) {
 		return false;
 	}
 	
@@ -121,13 +121,10 @@ DistanceField.prototype.InitUserInterface = function (controlsElem)
 	return true;
 };
 
-DistanceField.prototype.InitRenderer = function (fragmentShaderElem)
+DistanceField.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 {
 	this.fragmentShader = fragmentShaderElem.childNodes[0].nodeValue;
 
-	this.gpuTracer = new GPUTracer ();
-	var canvas = document.getElementById ('example');
-	
 	var camera = new JSM.Camera (
 		new JSM.Coord (4, -1, 2),
 		new JSM.Coord (0, 0, 1),
@@ -135,7 +132,8 @@ DistanceField.prototype.InitRenderer = function (fragmentShaderElem)
 	);
 	
 	var maxIteration = 256;
-	if (!this.gpuTracer.Init (canvas, camera, maxIteration)) {
+	this.gpuTracer = new GPUTracer ();
+	if (!this.gpuTracer.Init (canvasElem, camera, maxIteration)) {
 		return false;
 	}
 	if (!this.Compile ()) {

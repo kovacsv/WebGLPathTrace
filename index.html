@@ -305,11 +305,12 @@
 	
 	<script type="text/javascript">
 		window.onload = function () {
+			var canvasElem = document.getElementById ('render');
 			var controlsElem = document.getElementById ('controls');
 			var fragmentShaderElem = document.getElementById ('fragmentshader');
 
 			var distanceField = new DistanceField ();
-			distanceField.Init (controlsElem, fragmentShaderElem);
+			distanceField.Init (canvasElem, controlsElem, fragmentShaderElem);
 		}
 	</script>
 	
@@ -333,7 +334,7 @@
 		</div>
 		<div class="container">
 			<div class="canvas">
-				<canvas id="example" width="512" height="512"></canvas>
+				<canvas id="render" width="512" height="512"></canvas>
 			</div>
 			<div class="controls" id="controls">
 			</div>

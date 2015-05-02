@@ -9,6 +9,8 @@
 	<link rel="stylesheet" type="text/css" href="../style/style.css">
 	<script type="text/javascript" src="../include/jsmodeler.js"></script>
 	<script type="text/javascript" src="../include/gputracer.js"></script>
+	<script type="text/javascript" src="../include/userinterface.js"></script>
+	<script type="text/javascript" src="mandelbulb.js"></script>
 	<title>Mandelbulb Path Tracing</title>
 	
 	<script id="fragmentshader" type="x-shader/fragment">
@@ -27,8 +29,7 @@
 		uniform vec3 uLightPosition;
 		uniform float uLightRadius;
 		uniform float uIteration;
-		uniform float uShapeData1[6];
-		uniform float uShapeData2[6];
+		uniform float uPower;
 		uniform int uPreview;
 
 		struct Camera
@@ -97,7 +98,6 @@
 
 		float DistanceEstimation (in vec3 point)
 		{
-			const float power = 8.0;
 			float r = 0.0;
 			float dr = 1.0;
 			
@@ -109,11 +109,11 @@
 				}
 				float theta = atan (currentPoint.y / currentPoint.x);
 				float phi = asin (currentPoint.z / r);
-				dr = pow (r, power - 1.0) * dr * power + 1.0;
+				dr = pow (r, uPower - 1.0) * dr * uPower + 1.0;
 				
-				r = pow (r, power);
-				theta = theta * power;
-				phi = phi * power;
+				r = pow (r, uPower);
+				theta = theta * uPower;
+				phi = phi * uPower;
 				
 				currentPoint = point + r * vec3 (cos (theta) * cos (phi), sin (theta) * cos (phi), sin (phi));
 			}
@@ -242,51 +242,13 @@
 	</script>
 	
 	<script type="text/javascript">
-		var gpuTracer = null;
-		
-		function Compile ()
-		{
-			var fragmentShaderTag = document.getElementById ('fragmentshader');
-			var fragmentShader = fragmentShaderTag.childNodes[0].nodeValue;
+		window.onload = function () {
+			var canvasElem = document.getElementById ('render');
+			var controlsElem = document.getElementById ('controls');
+			var fragmentShaderElem = document.getElementById ('fragmentshader');
 
-			gpuTracer = new GPUTracer ();
-			var canvas = document.getElementById ('example');
-			
-			var camera = new JSM.Camera (
-				new JSM.Coord (4, 1, 2),
-				new JSM.Coord (0, 0, 0),
-				new JSM.Coord (0, 0, 1)
-			);
-			
-			var maxIteration = 256;
-
-			gpuTracer.Init (canvas, camera, maxIteration);
-			gpuTracer.Compile (fragmentShader, function (error) {
-				
-			});
-			
-			gpuTracer.SetUniformVector ('uLightPosition', [4.0, 2.0, 3.0]);
-			gpuTracer.SetUniformFloat ('uLightRadius', 0.5);
-			
-			gpuTracer.Start ();
-		}
-
-		function TextAreaKeyDown (event)
-		{
-			if (event.which == 9) {
-				event.preventDefault ();
-				var selectionStart = this.selectionStart;
-				this.value = this.value.substring (0, this.selectionStart) + '\t' + this.value.substring (this.selectionEnd);
-				this.selectionEnd = selectionStart + 1; 
-			}
-		}
-		
-	    window.onload = function ()
-		{
-			var fragmentShader = document.getElementById ('fragmentshader');
-			fragmentShader.onkeydown = TextAreaKeyDown;
-
-			Compile ();			
+			var mandelbulb = new Mandelbulb ();
+			mandelbulb.Init (canvasElem, controlsElem, fragmentShaderElem);
 		}
 	</script>
 
@@ -306,7 +268,7 @@
 		</div>
 		<div class="container">
 			<div class="canvas">
-				<canvas id="example" width="512" height="512"></canvas>
+				<canvas id="render" width="512" height="512"></canvas>
 			</div>
 			<div class="controls" id="controls">
 			</div>
