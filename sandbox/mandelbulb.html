@@ -6,17 +6,10 @@
 <head>
 
 	<meta http-equiv="content-type" content="text/html;charset=utf-8">
+	<link rel="stylesheet" type="text/css" href="../style/style.css">
 	<script type="text/javascript" src="../include/jsmodeler.js"></script>
 	<script type="text/javascript" src="../include/gputracer.js"></script>
-	<title>Example</title>
-	
-	<style>
-		html, body
-		{
-			margin : 5px;
-			padding : 0px;
-		}
-	</style>
+	<title>Mandelbulb Path Tracing</title>
 	
 	<script id="fragmentshader" type="x-shader/fragment">
 		precision highp float;
@@ -253,9 +246,6 @@
 		
 		function Compile ()
 		{
-			var errorDiv = document.getElementById ('error');
-			errorDiv.innerHTML = '';
-
 			var fragmentShaderTag = document.getElementById ('fragmentshader');
 			var fragmentShader = fragmentShaderTag.childNodes[0].nodeValue;
 
@@ -270,14 +260,10 @@
 			
 			var maxIteration = 256;
 
-			var timer = new JSM.Timer ();
-			timer.Start ();
 			gpuTracer.Init (canvas, camera, maxIteration);
 			gpuTracer.Compile (fragmentShader, function (error) {
-				errorDiv.innerHTML += error.replace ('\n', '<br>');
+				
 			});
-			timer.Stop ();
-			errorDiv.innerHTML += 'Compile time: ' + timer.Result () + '<br>';
 			
 			gpuTracer.SetUniformVector ('uLightPosition', [4.0, 2.0, 3.0]);
 			gpuTracer.SetUniformFloat ('uLightRadius', 0.5);
@@ -307,8 +293,25 @@
 </head>
 
 <body>
-	<div id="error"></div>
-	<canvas id="example" width="512" height="512"></canvas>
+	<a href="https://github.com/kovacsv/WebGLPathTrace">
+		<img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png">
+	</a>
+
+	<div class="frame">
+		<div class="title">Mandelbulb Path Tracing</div>
+		<div class="text">
+			<p>
+				...
+			</p>
+		</div>
+		<div class="container">
+			<div class="canvas">
+				<canvas id="example" width="512" height="512"></canvas>
+			</div>
+			<div class="controls" id="controls">
+			</div>
+		</div>
+	</div>
 </body>
 
 </html>
