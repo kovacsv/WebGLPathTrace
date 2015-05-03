@@ -65,7 +65,7 @@ UserInterface.AddSliderControl = function (parent, title, defaultRatio, elemClic
 {
 	function SetRatio (slider, sliderContent, ratio)
 	{
-		var length = (slider.offsetWidth - 2) * ratio;
+		var length = Math.floor ((slider.offsetWidth - 2) * ratio);
 		sliderContent.style.width = length + 'px';
 	}
 	
