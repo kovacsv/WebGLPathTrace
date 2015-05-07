@@ -62,7 +62,6 @@
 
 		struct Material
 		{
-			vec3 ambient;
 			vec3 diffuse;
 			float reflection;
 		};
@@ -86,7 +85,7 @@
 			vec3 position;
 			float distance;
 			vec3 normal;
-			int triangle;
+			int material;
 		};
 
 		float Random (vec2 seed)
@@ -197,7 +196,7 @@
 			
 			intersection.position = rayOrigin + rayDirection * distance;
 			intersection.distance = distance;
-			intersection.triangle = -1;
+			intersection.material = -1;
 			return true;
 		}
 
@@ -247,36 +246,26 @@
 		Material GetMaterial (in int index)
 		{
 			Material material;
-			material.ambient = GetFloatVector (uMaterialTextureSampler, uMaterialTextureSize, index * 3 + 0);
-			material.diffuse = GetFloatVector (uMaterialTextureSampler, uMaterialTextureSize, index * 3 + 1);
-			vec3 vec = GetFloatVector (uMaterialTextureSampler, uMaterialTextureSize, index * 3 + 2);
+			material.diffuse = GetFloatVector (uMaterialTextureSampler, uMaterialTextureSize, index * 2 + 0);
+			vec3 vec = GetFloatVector (uMaterialTextureSampler, uMaterialTextureSize, index * 2 + 1);
 			material.reflection = vec.x;
 			return material;
 		}
 
 		vec3 PhongShading (in vec3 shadedPoint, in vec3 shadedPointNormal, in vec3 lightPosition, in Material shadedMaterial)
 		{
-			float lightAmbientIntensity = 1.0;
 			float lightDiffuseIntensity = 1.0;
-			
-			vec3 ambientColor = shadedMaterial.ambient * lightAmbientIntensity;
-			ambientColor = clamp (ambientColor, 0.0, 1.0);
-			
 			vec3 lightDirection = normalize (lightPosition - shadedPoint);
 			float diffuseCoeff = max (dot (lightDirection, shadedPointNormal), 0.0);
 			vec3 diffuseColor = shadedMaterial.diffuse * lightDiffuseIntensity;
-			diffuseColor = clamp (diffuseColor, 0.0, 1.0);
-			
-			vec3 color = ambientColor + diffuseColor * diffuseCoeff;
-			color = clamp (color, 0.0, 1.0);
-			return color;
+			return diffuseColor * diffuseCoeff;
 		}
 
 		Intersection RayModelIntersection (in Ray ray, bool frontFacing)
 		{
 			Intersection result;
 			result.distance = INF;
-			bool hasIntersection = false;
+			int foundTriangle = -1;
 			for (int i = 0; i < TRIANGLE_COUNT; i++) {
 				Triangle triangle = GetTriangle (i);
 				Intersection currentIntersection;
@@ -284,17 +273,29 @@
 					if (currentIntersection.distance < result.distance) {
 						result.position = currentIntersection.position;
 						result.distance = currentIntersection.distance;
-						result.triangle = i;
+						foundTriangle = i;
 					}
-					hasIntersection = true;
 				}
 			}
 
-			if (hasIntersection) {
-				Triangle minTriangle = GetTriangle (result.triangle);
+			if (foundTriangle >= 0) {
+				Triangle minTriangle = GetTriangle (foundTriangle);
+				result.material = minTriangle.mat;
 				result.normal = GetTriangleNormal (minTriangle, result.position);
 			}
 			return result;
+		}
+
+		bool ShadowIntersection (in Ray ray)
+		{
+			for (int i = 0; i < TRIANGLE_COUNT; i++) {
+				Triangle triangle = GetTriangle (i);
+				Intersection currentIntersection;
+				if (RayTriangleIntersection (ray, triangle.v0, triangle.v1, triangle.v2, false, currentIntersection)) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		vec3 TraceMainRay (in Ray ray)
@@ -302,35 +303,38 @@
 			vec3 shadedColor = vec3 (0.0, 0.0, 0.0);
 			vec3 currentColor = vec3 (1.0, 1.0, 1.0);
 			Ray currentRay = ray;
+		
 			for (int i = 0; i < 3; i++) {
 				Intersection intersection = RayModelIntersection (currentRay, true);
 				if (intersection.distance == INF) {
 					break;
 				}
 
-				Triangle triangle = GetTriangle (intersection.triangle);
-				Material material = GetMaterial (triangle.mat);
+				Material material = GetMaterial (intersection.material);
 				if (uPreview == 1) {
 					shadedColor = PhongShading (intersection.position, intersection.normal, uLightPosition, material);
 					break;
 				}
 				
-				vec3 materialColor = material.diffuse;
-				currentColor *= materialColor;
+				currentColor *= material.diffuse;
 
 				vec3 randomLightPoint = uLightPosition + RandomDirOnSphere (intersection.position.xy) * uLightRadius;
 				Ray lightRay;
 				lightRay.origin = intersection.position;
 				lightRay.direction = normalize (randomLightPoint - intersection.position);
 				lightRay.length = length (randomLightPoint - intersection.position);
-				Intersection lightIntersection = RayModelIntersection (lightRay, false);
-				if (lightIntersection.distance == INF) {
+				if (!ShadowIntersection (lightRay)) {
 					vec3 directLightColor = PhongShading (intersection.position, intersection.normal, randomLightPoint, material);
 					shadedColor += currentColor * directLightColor;
 				}
 				
 				currentRay.origin = intersection.position;
-				currentRay.direction = RandomDirOnHemisphere (intersection.normal, intersection.position.xy);;
+				if (Random (intersection.position.xy) < material.reflection) {
+					currentRay.direction = GetReflectedDirection (currentRay.direction, intersection.normal);
+					currentColor = vec3 (1.0, 1.0, 1.0);
+				} else {
+					currentRay.direction = RandomDirOnHemisphere (intersection.normal, intersection.position.xy);	
+				}
 				currentRay.length = INF;
 			}
 			return shadedColor;
@@ -380,10 +384,10 @@
 		{
 			var model = new JSM.Model ();
 			var materials = new JSM.Materials ();
-			materials.AddMaterial (new JSM.Material ({ambient : 0x000000, diffuse : 0xaaaaaa}));
-			materials.AddMaterial (new JSM.Material ({ambient : 0x000000, diffuse : 0x00aa00}));
-			materials.AddMaterial (new JSM.Material ({ambient : 0x000000, diffuse : 0x0000aa}));
-			materials.AddMaterial (new JSM.Material ({ambient : 0x000000, diffuse : 0xaa0000}));
+			materials.AddMaterial (new JSM.Material ({diffuse : 0xaaaaaa}));
+			materials.AddMaterial (new JSM.Material ({diffuse : 0x00aa00}));
+			materials.AddMaterial (new JSM.Material ({diffuse : 0x0000aa}));
+			materials.AddMaterial (new JSM.Material ({diffuse : 0xaa0000, reflection : 0.2}));
 			
 			var body = JSM.GenerateCuboid (1, 1, 1);
 			body.SetPolygonsMaterialIndex (1);
@@ -445,7 +449,6 @@
 			var i, material;
 			for (i = 0; i < model.MaterialCount (); i++) {
 				material = model.GetMaterial (i);
-				result.push (material.ambient[0], material.ambient[1], material.ambient[2]);
 				result.push (material.diffuse[0], material.diffuse[1], material.diffuse[2]);
 				result.push (material.reflection, 0.0, 0.0);
 			}
@@ -495,22 +498,9 @@
 			
 			gpuTracer.Start ();
 		}
-
-		function TextAreaKeyDown (event)
-		{
-			if (event.which == 9) {
-				event.preventDefault ();
-				var selectionStart = this.selectionStart;
-				this.value = this.value.substring (0, this.selectionStart) + '\t' + this.value.substring (this.selectionEnd);
-				this.selectionEnd = selectionStart + 1; 
-			}
-		}
 		
 	    window.onload = function ()
 		{
-			var fragmentShader = document.getElementById ('fragmentshader');
-			fragmentShader.onkeydown = TextAreaKeyDown;
-
 			Compile ();			
 		}
 	</script>
