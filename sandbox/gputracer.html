@@ -31,7 +31,7 @@
 		varying vec2 vVertexPosition;
 		uniform float uSize;
 
-		#define EPS 0.000005
+		#define EPS 0.0000005
 		#define BIGEPS 0.005
 		#define PI 3.1415926535897932384626433832795
 		#define INF 1.0 / 0.0
@@ -320,8 +320,9 @@
 
 				vec3 randomLightPoint = uLightPosition + RandomDirOnSphere (intersection.position.xy) * uLightRadius;
 				Ray lightRay;
-				lightRay.origin = intersection.position;
-				lightRay.direction = normalize (randomLightPoint - intersection.position);
+				vec3 direction = normalize (randomLightPoint - intersection.position);
+				lightRay.origin = intersection.position + direction * BIGEPS;
+				lightRay.direction = direction;
 				lightRay.length = length (randomLightPoint - intersection.position);
 				if (!ShadowIntersection (lightRay)) {
 					vec3 directLightColor = PhongShading (intersection.position, intersection.normal, randomLightPoint, material);
@@ -401,7 +402,7 @@
 			model.AddBody (body2);
 
 			var body3 = JSM.GenerateCuboid (3, 0.1, 2);
-			//var body3 = JSM.GenerateCylinder (0.8, 2.0, 25, true, true);
+			var body3 = JSM.GenerateCylinder (0.8, 2.0, 25, true, true);
 			//var body3 = JSM.GenerateTorus (1.0, 0.3, 20, 20, true);
 			body3.SetPolygonsMaterialIndex (3);
 			body3.Transform (JSM.TranslationTransformation (new JSM.Coord (0.0, -0.7, 0.5)));
