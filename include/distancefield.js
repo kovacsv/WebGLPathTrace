@@ -133,15 +133,18 @@ DistanceField.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 	
 	var maxIteration = 256;
 	this.gpuTracer = new GPUTracer ();
-	if (!this.gpuTracer.Init (canvasElem, camera, maxIteration)) {
+	if (!this.gpuTracer.Init (canvasElem, camera, maxIteration, null)) {
 		return false;
 	}
+	
 	if (!this.Compile ()) {
 		return false;
 	}
+	
 	if (!this.UpdateUniforms ()) {
 		return false;
 	}
+	
 	this.StartRender (false);
 	return true;
 };

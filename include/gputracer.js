@@ -9,11 +9,12 @@ GPUTracer = function ()
 	this.camera = null;
 	this.iteration = null;
 	this.maxIteration = null;
+	this.callbacks = null;
 	this.previewMode = null;
 	this.previewTimeout = null;
 };
 
-GPUTracer.prototype.Init = function (canvas, camera, maxIteration)
+GPUTracer.prototype.Init = function (canvas, camera, maxIteration, callbacks)
 {
 	if (!this.InitContext (canvas)) {
 		return false;
@@ -27,7 +28,7 @@ GPUTracer.prototype.Init = function (canvas, camera, maxIteration)
 		return false;
 	}
 
-	if (!this.InitNavigation (camera)) {
+	if (!this.InitNavigation (camera, callbacks)) {
 		return false;
 	}
 
@@ -173,12 +174,22 @@ GPUTracer.prototype.RenderFrame = function ()
 		requestAnimationFrame (this.RenderFrame.bind (this));
 	} else {
 		this.iteration = 0;
+		this.RenderFinished ();
 	}
 };
 
 GPUTracer.prototype.Resize = function ()
 {
 
+};
+
+GPUTracer.prototype.RenderFinished = function ()
+{
+	if (this.callbacks !== undefined && this.callbacks !== null) {
+		if (this.callbacks.renderFinished !== undefined && this.callbacks.renderFinished !== null) {
+			this.callbacks.renderFinished ();
+		}
+	}
 };
 
 GPUTracer.prototype.InitContext = function (canvas)
@@ -239,14 +250,15 @@ GPUTracer.prototype.InitVertexBuffer = function (shader)
 	this.context.bindBuffer (this.context.ARRAY_BUFFER, null);		
 };
 
-GPUTracer.prototype.InitNavigation = function (camera)
+GPUTracer.prototype.InitNavigation = function (camera, callbacks)
 {
 	this.camera = camera;
 	this.navigation = new JSM.Navigation ();
 	if (!this.navigation.Init (this.canvas, this.camera, this.StartInPreviewMode.bind (this), this.Resize.bind (this))) {
 		return false;
 	}
-
+	
+	this.callbacks = callbacks;
 	return true;
 };
 
