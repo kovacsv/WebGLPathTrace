@@ -76,6 +76,7 @@ GPUTracer.prototype.StartInPreviewMode = function ()
 	this.iteration = 0;
 	this.previewMode = true;
 	if (!isRendering) {
+		this.Callback ('startInPreviewMode');
 		this.RenderFrame ();
 	}
 };
@@ -86,6 +87,7 @@ GPUTracer.prototype.StartInNormalMode = function ()
 	this.iteration = 0;
 	this.previewMode = false;
 	if (!isRendering) {
+		this.Callback ('startInNormalMode');
 		this.RenderFrame ();
 	}
 };
@@ -174,7 +176,7 @@ GPUTracer.prototype.RenderFrame = function ()
 		requestAnimationFrame (this.RenderFrame.bind (this));
 	} else {
 		this.iteration = 0;
-		this.RenderFinished ();
+		this.Callback ('renderFinished');
 	}
 };
 
@@ -183,11 +185,12 @@ GPUTracer.prototype.Resize = function ()
 
 };
 
-GPUTracer.prototype.RenderFinished = function ()
+GPUTracer.prototype.Callback = function (name)
 {
 	if (this.callbacks !== undefined && this.callbacks !== null) {
-		if (this.callbacks.renderFinished !== undefined && this.callbacks.renderFinished !== null) {
-			this.callbacks.renderFinished ();
+		var callback = this.callbacks[name];
+		if (callback !== undefined && callback !== null) {
+			callback ();
 		}
 	}
 };

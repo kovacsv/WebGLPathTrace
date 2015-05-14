@@ -6,8 +6,6 @@ ModelTracer = function ()
 	this.fragmentShader = null;
 	this.model = null;
 	this.settings = null;
-	//this.tileSize = null;
-	//this.tileStart = null;
 };
 
 ModelTracer.prototype.Init = function (canvasElem, controlsElem, fragmentShaderElem)
@@ -46,13 +44,11 @@ ModelTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 		new JSM.Coord (0, 0, 1)
 	);
 	
-	var maxIteration = 256;
+	var maxIteration = 128;
 	var myThis = this;
 	
 	this.gpuTracer = new GPUTracer ();
-	var callbacks = {
-		//renderFinished : myThis.TileFinished.bind (this)
-	};
+	var callbacks = {};
 	
 	if (!this.gpuTracer.Init (this.canvas, camera, maxIteration, callbacks)) {
 		return false;
@@ -66,10 +62,7 @@ ModelTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 		return false;
 	}
 	
-	//this.tileSize = 0.2;
-	//this.tileStart = [0.0, 0.0];
-	//this.RenderTile (this.tile);
-	this.StartRender (false);
+	this.gpuTracer.StartInNormalMode ();	
 	return true;
 };
 
@@ -170,7 +163,7 @@ ModelTracer.prototype.GetModel = function ()
 	model.AddBody (body2);
 
 	var body3 = JSM.GenerateCuboid (3, 0.1, 2);
-	var body3 = JSM.GenerateCylinder (0.8, 2.0, 25, true, true);
+	//var body3 = JSM.GenerateCylinder (0.8, 2.0, 25, true, true);
 	//var body3 = JSM.GenerateTorus (1.0, 0.3, 20, 20, true);
 	body3.SetPolygonsMaterialIndex (3);
 	body3.Transform (JSM.TranslationTransformation (new JSM.Coord (0.0, -0.7, 0.5)));
@@ -184,35 +177,4 @@ ModelTracer.prototype.GetModel = function ()
 	model.AddBody (box);
 	
 	return JSM.ConvertModelToTriangleModel (model, materials);
-};
-
-//ModelTracer.prototype.TileFinished = function ()
-//{
-//	if (JSM.IsLower (this.tileStart[0], 1.0 - this.tileSize)) {
-//		this.tileStart[0] += this.tileSize;
-//		this.RenderTile (false);
-//	} else if (JSM.IsLower (this.tileStart[1], 1.0 - this.tileSize)) {
-//		this.tileStart[0] = 0.0;
-//		this.tileStart[1] += this.tileSize;
-//		this.RenderTile (false);
-//	} else {
-//		this.tileStart[0] = 0.0;
-//		this.tileStart[1] = 0.0;
-//	}
-//}
-//
-//ModelTracer.prototype.RenderTile = function ()
-//{
-//	var tile = [this.tileStart[0], this.tileStart[1], this.tileStart[0] + this.tileSize, this.tileStart[1] + this.tileSize];
-//	this.gpuTracer.SetUniformArray ('uTileData', tile);
-//	this.StartRender (false);
-//}
-
-ModelTracer.prototype.StartRender = function (isPreviewMode)
-{
-	if (isPreviewMode) {
-		this.gpuTracer.StartInPreviewMode ();
-	} else {
-		this.gpuTracer.StartInNormalMode ();
-	}
 };
