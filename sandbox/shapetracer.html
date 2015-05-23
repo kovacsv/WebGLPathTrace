@@ -18,7 +18,7 @@
 		varying vec2 vVertexPosition;
 		uniform float uSize;
 
-		#define EPS 0.0000005
+		#define EPS 0.000005
 		#define BIGEPS 0.005
 		#define PI 3.1415926535897932384626433832795
 		#define INF 1.0 / 0.0
@@ -93,21 +93,14 @@
 			float c = dot (sphereToRay, sphereToRay) - sphere.radius * sphere.radius;
 
 			float disc = b * b - 4.0 * a * c;
-			if (disc < 0.0) {
+			if (disc < EPS) {
 				return result;
 			}
 
-			float q = 0.0;
-			if (b < 0.0) {
-				q = (-b - sqrt (disc)) * 0.5;
-			} else {
-				q = (-b + sqrt (disc)) * 0.5;
-			}
-
-			float t0 = q / a;
-			float t1 = c / q;
+			float t0 = (-b - sqrt (disc)) * 0.5;
+			float t1 = (-b + sqrt (disc)) * 0.5;
 			float maxT = max (t0, t1);
-			if (maxT < 0.0) {
+			if (maxT < EPS) {
 				return result;
 			}
 
@@ -170,7 +163,7 @@
 			
 			Intersection result;
 			result.distance = INF;
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 5; i++) {
 				Intersection intersection = RaySphereIntersection (ray, spheres[i]);
 				if (intersection.distance < result.distance) {
 					result.position = intersection.position;
