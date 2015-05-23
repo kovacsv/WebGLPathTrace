@@ -163,7 +163,7 @@
 			
 			Intersection result;
 			result.distance = INF;
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < 3; i++) {
 				Intersection intersection = RaySphereIntersection (ray, spheres[i]);
 				if (intersection.distance < result.distance) {
 					result.position = intersection.position;
@@ -185,7 +185,7 @@
 			vec3 currentColor = vec3 (1.0, 1.0, 1.0);
 			Ray currentRay = ray;
 		
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 5; i++) {
 				Intersection intersection = RayModelIntersection (currentRay, true);
 				if (intersection.distance == INF) {
 					break;
