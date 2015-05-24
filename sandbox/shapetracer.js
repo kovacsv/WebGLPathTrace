@@ -71,15 +71,15 @@ ShapeTracer.prototype.Compile = function ()
 	this.model = {
 		spheres : [
 			{
-				origin : new JSM.Coord (2.0, 0.0, 0.0),
+				origin : [2.0, 0.0, 0.0],
 				radius : 0.5
 			},
 			{
-				origin : new JSM.Coord (0.0, 2.0, 0.0),
+				origin : [0.0, 2.0, 0.0],
 				radius : 0.8
 			},
 			{
-				origin : new JSM.Coord (0.0, 0.0, 0.0),
+				origin : [0.0, 0.0, 0.0],
 				radius : 1.0
 			}
 		]
@@ -113,7 +113,7 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 
 	var i;
 	for (i = 0; i < this.model.spheres.length; i++) {
-		this.gpuTracer.SetUniformVector ('uSpheres[' + i + '].origin', [this.model.spheres[i].origin.x, this.model.spheres[i].origin.y, this.model.spheres[i].origin.z]);
+		this.gpuTracer.SetUniformVector ('uSpheres[' + i + '].origin', this.model.spheres[i].origin);
 		this.gpuTracer.SetUniformFloat ('uSpheres[' + i + '].radius', this.model.spheres[i].radius);
 	}
 
