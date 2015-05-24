@@ -76,6 +76,8 @@
 			int material;
 		};
 
+		uniform Sphere uSpheres[SPHERE_COUNT];
+
 		float Random (vec2 seed)
 		{
 			vec2 theSeed = seed + vec2 (uIteration, -uIteration);
@@ -153,18 +155,10 @@
 
 		Intersection RayModelIntersection (in Ray ray, bool frontFacing)
 		{
-			Sphere spheres[3];
-			spheres[0].origin = vec3 (0.0, 0.0, 0.0);
-			spheres[0].radius = 1.0;
-			spheres[1].origin = vec3 (0.0, 2.0, 0.0);
-			spheres[1].radius = 1.0;
-			spheres[2].origin = vec3 (2.0, 0.0, 0.0);
-			spheres[2].radius = 1.0;
-			
 			Intersection result;
 			result.distance = INF;
-			for (int i = 0; i < 3; i++) {
-				Intersection intersection = RaySphereIntersection (ray, spheres[i]);
+			for (int i = 0; i < SPHERE_COUNT; i++) {
+				Intersection intersection = RaySphereIntersection (ray, uSpheres[i]);
 				if (intersection.distance < result.distance) {
 					result.position = intersection.position;
 					result.distance = intersection.distance;
@@ -176,6 +170,7 @@
 
 		bool ShadowIntersection (in Ray ray)
 		{
+			Intersection intersection = RayModelIntersection (ray, false);
 			return false;
 		}
 

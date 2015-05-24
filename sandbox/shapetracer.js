@@ -5,6 +5,7 @@ ShapeTracer = function ()
 	this.gpuTracer = null;
 	this.fragmentShader = null;
 	this.settings = null;
+	this.model = null;
 };
 
 ShapeTracer.prototype.Init = function (canvasElem, controlsElem, fragmentShaderElem)
@@ -67,10 +68,27 @@ ShapeTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 
 ShapeTracer.prototype.Compile = function ()
 {
+	this.model = {
+		spheres : [
+			{
+				origin : new JSM.Coord (2.0, 0.0, 0.0),
+				radius : 0.5
+			},
+			{
+				origin : new JSM.Coord (0.0, 2.0, 0.0),
+				radius : 0.8
+			},
+			{
+				origin : new JSM.Coord (0.0, 0.0, 0.0),
+				radius : 1.0
+			}
+		]
+	};
+	
 	var timer = new JSM.Timer ();
 	timer.Start ();
 	var defines = [
-		//'#define TRIANGLE_COUNT ' + this.model.TriangleCount ()
+		'#define SPHERE_COUNT ' + this.model.spheres.length
 	].join ('\n');
 	var result = this.gpuTracer.Compile (defines + this.fragmentShader, function (error) {
 		console.log (error);
@@ -92,6 +110,13 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 	this.gpuTracer.GetNavigation ().SetFarDistanceLimit (20.0);
 	this.gpuTracer.SetUniformVector ('uLightPosition', [this.settings.light.position.x, this.settings.light.position.y, this.settings.light.position.z]);
 	this.gpuTracer.SetUniformFloat ('uLightRadius', this.settings.light.radius);
+
+	var i;
+	for (i = 0; i < this.model.spheres.length; i++) {
+		this.gpuTracer.SetUniformVector ('uSpheres[' + i + '].origin', [this.model.spheres[i].origin.x, this.model.spheres[i].origin.y, this.model.spheres[i].origin.z]);
+		this.gpuTracer.SetUniformFloat ('uSpheres[' + i + '].radius', this.model.spheres[i].radius);
+	}
+
 	
 	return true;
 };
