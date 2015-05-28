@@ -70,17 +70,23 @@ ShapeTracer.prototype.Compile = function ()
 {
 	this.model = {
 		spheres : [
+			//{
+			//	origin : [2.0, 0.0, 0.0],
+			//	radius : 0.5
+			//},
+			//{
+			//	origin : [0.0, 2.0, 0.0],
+			//	radius : 0.8
+			//},
+			//{
+			//	origin : [0.0, 0.0, 0.0],
+			//	radius : 1.0
+			//}
+		],
+		boxes : [
 			{
-				origin : [2.0, 0.0, 0.0],
-				radius : 0.5
-			},
-			{
-				origin : [0.0, 2.0, 0.0],
-				radius : 0.8
-			},
-			{
-				origin : [0.0, 0.0, 0.0],
-				radius : 1.0
+				min : [-0.5, -0.5, -0.5],
+				max : [0.5, 0.5, 0.5]
 			}
 		]
 	};
@@ -88,7 +94,8 @@ ShapeTracer.prototype.Compile = function ()
 	var timer = new JSM.Timer ();
 	timer.Start ();
 	var defines = [
-		'#define SPHERE_COUNT ' + this.model.spheres.length
+		'#define SPHERE_COUNT ' + this.model.spheres.length,
+		'#define BOX_COUNT ' + this.model.boxes.length
 	].join ('\n');
 	var result = this.gpuTracer.Compile (defines + this.fragmentShader, function (error) {
 		console.log (error);
@@ -116,7 +123,10 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 		this.gpuTracer.SetUniformVector ('uSpheres[' + i + '].origin', this.model.spheres[i].origin);
 		this.gpuTracer.SetUniformFloat ('uSpheres[' + i + '].radius', this.model.spheres[i].radius);
 	}
-
+	for (i = 0; i < this.model.boxes.length; i++) {
+		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].min', this.model.boxes[i].min);
+		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].max', this.model.boxes[i].max);
+	}
 	
 	return true;
 };
