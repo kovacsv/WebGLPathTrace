@@ -70,23 +70,39 @@ ShapeTracer.prototype.Compile = function ()
 {
 	this.model = {
 		spheres : [
-			//{
-			//	origin : [2.0, 0.0, 0.0],
-			//	radius : 0.5
-			//},
-			//{
-			//	origin : [0.0, 2.0, 0.0],
-			//	radius : 0.8
-			//},
+			{
+				origin : [2.0, 0.0, 0.0],
+				radius : 1.0,
+				material : {
+					diffuse : [0.0, 0.8, 0.0],
+					reflection : 0.0
+				}
+			},
+			{
+				origin : [0.0, 2.0, 0.0],
+				radius : 1.0,
+				material : {
+					diffuse : [0.0, 0.8, 0.0],
+					reflection : 0.0
+				}
+			},
 			//{
 			//	origin : [0.0, 0.0, 0.0],
-			//	radius : 1.0
+			//	radius : 1.0,
+			//	material : {
+			//		diffuse : [0.8, 0.0, 0.0],
+			//		reflection : 1.0
+			//	}
 			//}
 		],
 		boxes : [
 			{
-				min : [-0.5, -0.5, -0.5],
-				max : [0.5, 0.5, 0.5]
+				min : [-1, -1, -1],
+				max : [1, 1, 1],
+				material : {
+					diffuse : [0.8, 0.0, 0.0],
+					reflection : 0.0
+				}
 			}
 		]
 	};
@@ -122,10 +138,14 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 	for (i = 0; i < this.model.spheres.length; i++) {
 		this.gpuTracer.SetUniformVector ('uSpheres[' + i + '].origin', this.model.spheres[i].origin);
 		this.gpuTracer.SetUniformFloat ('uSpheres[' + i + '].radius', this.model.spheres[i].radius);
+		this.gpuTracer.SetUniformVector ('uSpheres[' + i + '].material.diffuse', this.model.spheres[i].material.diffuse);
+		this.gpuTracer.SetUniformFloat ('uSpheres[' + i + '].material.reflection', this.model.spheres[i].material.reflection);
 	}
 	for (i = 0; i < this.model.boxes.length; i++) {
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].min', this.model.boxes[i].min);
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].max', this.model.boxes[i].max);
+		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].material.diffuse', this.model.boxes[i].material.diffuse);
+		this.gpuTracer.SetUniformFloat ('uBoxes[' + i + '].material.reflection', this.model.boxes[i].material.reflection);
 	}
 	
 	return true;

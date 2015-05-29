@@ -66,12 +66,14 @@
 		{
 			vec3 origin;
 			float radius;
+			Material material;
 		};
 		
 		struct Box
 		{
 			vec3 min;
 			vec3 max;
+			Material material;
 		};
 
 		struct Intersection
@@ -79,6 +81,7 @@
 			vec3 position;
 			float distance;
 			vec3 normal;
+			Material material;
 		};
 
 		#if SPHERE_COUNT > 0
@@ -94,125 +97,84 @@
 			return fract (sin (dot (theSeed, vec2 (12.9898,78.233))) * 43758.5453);
 		}
 
-		Intersection RaySphereIntersection (in Ray ray, in Sphere sphere)
-		{
-			Intersection result;
-			result.distance = INF;
-			
-			vec3 sphereToRay = ray.origin - sphere.origin;
-			float a = dot (ray.direction, ray.direction);
-			float b = 2.0 * dot (sphereToRay, ray.direction);
-			float c = dot (sphereToRay, sphereToRay) - sphere.radius * sphere.radius;
+		#if SPHERE_COUNT > 0
+			Intersection RaySphereIntersection (in Ray ray, in Sphere sphere)
+			{
+				Intersection result;
+				result.distance = INF;
+				
+				vec3 sphereToRay = ray.origin - sphere.origin;
+				float a = dot (ray.direction, ray.direction);
+				float b = 2.0 * dot (sphereToRay, ray.direction);
+				float c = dot (sphereToRay, sphereToRay) - sphere.radius * sphere.radius;
 
-			float disc = b * b - 4.0 * a * c;
-			if (disc < EPS) {
-				return result;
-			}
-
-			float t0 = (-b - sqrt (disc)) * 0.5;
-			float t1 = (-b + sqrt (disc)) * 0.5;
-			float maxT = max (t0, t1);
-			if (maxT < EPS) {
-				return result;
-			}
-
-			float distance = 0.0;
-			float minT = min (t0, t1);
-			if (minT < 0.0) {
-				distance = maxT;
-			} else {
-				distance = minT;
-			}
-
-			if (distance > ray.length) {
-				return result;
-			}
-
-			result.position = ray.origin + distance * ray.direction;
-			result.distance = distance;
-			result.normal = normalize (result.position - sphere.origin);
-			return result;
-		}
-
-		Intersection RayBoxIntersection (in Ray ray, in Box box)
-		{
-			Intersection result;
-			result.distance = INF;
-
-			int quadrant[3];
-			vec3 candidatePlane;
-
-			bool originInBox = true;
-			for (int i = 0; i < 3; i++) {
-				if (ray.origin[i] < box.min[i]) {
-					quadrant[i] = 0;
-					candidatePlane[i] = box.min[i];
-					originInBox = false;
-				} else if (ray.origin[i] > box.max[i]) {
-					quadrant[i] = 1;
-					candidatePlane[i] = box.max[i];
-					originInBox = false;
-				} else {
-					quadrant[i] = 2;
+				float disc = b * b - 4.0 * a * c;
+				if (disc < EPS) {
+					return result;
 				}
-			}
 
-			if (originInBox) {
-				return result;
-			}
-
-			vec3 maxT;
-			for (int i = 0; i < 3; i++) {
-				if (quadrant[i] != 2 && ray.direction[i] != 0.0) {
-					maxT[i] = (candidatePlane[i] - ray.origin[i]) / ray.direction[i];
-				} else {
-					maxT[i] = -1.0;
+				float t0 = (-b - sqrt (disc)) * 0.5;
+				float t1 = (-b + sqrt (disc)) * 0.5;
+				float maxT = max (t0, t1);
+				if (maxT < EPS) {
+					return result;
 				}
-			}
 
-			int whichPlane = 0;
-			float planeDistance = 0.0;
-			vec3 normal = vec3 (0.0, 0.0, 0.0);
-			if (maxT[0] > maxT[1] && maxT[0] > maxT[2]) {
-				whichPlane = 0;
-				planeDistance = maxT[0];
-				normal[0] = 1.0;
-			} else if (maxT[1] > maxT[0] && maxT[1] > maxT[2]) {
-				whichPlane = 1;
-				planeDistance = maxT[1];
-				normal[1] = 1.0;
-			} else if (maxT[2] > maxT[0] && maxT[2] > maxT[1]) {
-				whichPlane = 2;
-				planeDistance = maxT[2];
-				normal[2] = 1.0;
-			}
+				float minT = min (t0, t1);
+				float distance = minT < 0.0 ? maxT : minT;
+				if (distance > ray.length) {
+					return result;
+				}
 
-			if (planeDistance < 0.0) {
+				result.position = ray.origin + distance * ray.direction;
+				result.distance = distance;
+				result.normal = normalize (result.position - sphere.origin);
+				result.material = sphere.material;
 				return result;
 			}
+		#endif
 
-			vec3 xCoord;
-			for (int i = 0; i < 3; i++) {
-				if (whichPlane != i) {
-					xCoord[i] = ray.origin[i] + planeDistance * ray.direction[i];
-					if (xCoord[i] < box.min[i] || xCoord[i] > box.max[i]) {
+		#if BOX_COUNT > 0
+			Intersection RayBoxIntersection (in Ray ray, in Box box)
+			{
+				Intersection result;
+				result.distance = INF;
+
+				vec3 candidatePlane;
+				candidatePlane.x = min (max (ray.origin.x, box.min.x), box.max.x);
+				candidatePlane.y = min (max (ray.origin.y, box.min.y), box.max.y);
+				candidatePlane.z = min (max (ray.origin.z, box.min.z), box.max.z);
+
+				vec3 maxT = (candidatePlane - ray.origin) / ray.direction;
+				for (int i = 0; i < 3; i++) {
+					if (ray.origin[i] >= box.min[i] && ray.origin[i] <= box.max[i]) {
+						maxT[i] = -1.0;
+					}
+				}
+
+				float distance = max (max (maxT.x, maxT.y), maxT.z);
+				if (distance < 0.0 || distance > ray.length) {
+					return result;
+				}
+
+				vec3 xCoord = ray.origin + distance * ray.direction;
+				vec3 normal = vec3 (0.0, 0.0, 0.0);
+				for (int i = 0; i < 3; i++) {
+					if (maxT[i] == distance) {
+						normal[i] = candidatePlane[i];
+						xCoord[i] = candidatePlane[i];
+					} else if (xCoord[i] < box.min[i] || xCoord[i] > box.max[i]) {
 						return result;
 					}
-				} else {
-					xCoord[i] = candidatePlane[i];
 				}
-			}
 
-			float distance = length (ray.origin - xCoord);
-			if (distance > ray.length) {
+				result.position = xCoord;
+				result.normal = normalize (normal);
+				result.distance = distance;
+				result.material = box.material;
 				return result;
-			}			
-			
-			result.position = xCoord;
-			result.normal = normalize (normal);
-			result.distance = distance;
-			return result;
-		}
+			}
+		#endif
 
 		vec3 GetReflectedDirection (in vec3 direction, in vec3 normal)
 		{
@@ -279,9 +241,7 @@
 					break;
 				}
 
-				Material material;
-				material.diffuse = vec3 (0.8, 0.0, 0.0);
-				material.reflection = 0.0;
+				Material material = intersection.material;
 				if (uPreview == 1) {
 					shadedColor = PhongShading (intersection.position, intersection.normal, uLightPosition, material);
 					break;
