@@ -207,7 +207,7 @@
 		
 		#define CHECK_INTERSECTION(f, s) Intersection intersection = f (ray, s); if (intersection.distance < result.distance) { result = intersection; }
 
-		Intersection RayModelIntersection (in Ray ray, bool frontFacing)
+		Intersection RayModelIntersection (in Ray ray)
 		{
 			Intersection result;
 			result.distance = INF;
@@ -224,11 +224,6 @@
 			return result;
 		}
 
-		bool ShadowIntersection (in Ray ray)
-		{
-			return false;
-		}
-
 		vec3 TraceMainRay (in Ray ray)
 		{
 			vec3 shadedColor = vec3 (0.0, 0.0, 0.0);
@@ -236,17 +231,12 @@
 			Ray currentRay = ray;
 		
 			for (int i = 0; i < 5; i++) {
-				Intersection intersection = RayModelIntersection (currentRay, true);
+				Intersection intersection = RayModelIntersection (currentRay);
 				if (intersection.distance == INF) {
 					break;
 				}
 
 				Material material = intersection.material;
-				if (uPreview == 1) {
-					shadedColor = PhongShading (intersection.position, intersection.normal, uLightPosition, material);
-					break;
-				}
-				
 				currentColor *= material.diffuse;
 
 				vec3 randomLightPoint = uLightPosition + RandomDirOnSphere (intersection.position.xy) * uLightRadius;
@@ -255,7 +245,8 @@
 				lightRay.origin = intersection.position + direction * BIGEPS;
 				lightRay.direction = direction;
 				lightRay.length = length (randomLightPoint - intersection.position);
-				if (!ShadowIntersection (lightRay)) {
+				Intersection lightIntersection = RayModelIntersection (lightRay);
+				if (lightIntersection.distance == INF) {
 					vec3 directLightColor = PhongShading (intersection.position, intersection.normal, randomLightPoint, material);
 					shadedColor += currentColor * directLightColor;
 				}
