@@ -85,14 +85,6 @@ ShapeTracer.prototype.Compile = function ()
 					diffuse : [0.0, 0.8, 0.0],
 					reflection : 0.0
 				}
-			},
-			{
-				origin : [0.0, 0.0, 0.0],
-				radius : 1.0,
-				material : {
-					diffuse : [0.8, 0.0, 0.0],
-					reflection : 0.0
-				}
 			}
 		],
 		boxes : [
