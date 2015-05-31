@@ -91,7 +91,7 @@ ShapeTracer.prototype.Compile = function ()
 				radius : 1.0,
 				material : {
 					diffuse : [0.8, 0.0, 0.0],
-					reflection : 1.0
+					reflection : 0.0
 				}
 			}
 		],
@@ -101,7 +101,17 @@ ShapeTracer.prototype.Compile = function ()
 				max : [1, 1, 1],
 				material : {
 					diffuse : [0.8, 0.0, 0.0],
-					reflection : 1.0
+					reflection : 0.0
+				}
+			}
+		],
+		planes : [
+			{
+				origin : [0, 0, -1.0],
+				normal : [0, 0, 1],
+				material : {
+					diffuse : [0.8, 0.8, 0.8],
+					reflection : 0.0
 				}
 			}
 		]
@@ -111,7 +121,8 @@ ShapeTracer.prototype.Compile = function ()
 	timer.Start ();
 	var defines = [
 		'#define SPHERE_COUNT ' + this.model.spheres.length,
-		'#define BOX_COUNT ' + this.model.boxes.length
+		'#define BOX_COUNT ' + this.model.boxes.length,
+		'#define PLANE_COUNT ' + this.model.planes.length
 	].join ('\n');
 	var result = this.gpuTracer.Compile (defines + this.fragmentShader, function (error) {
 		console.log (error);
@@ -146,6 +157,12 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].max', this.model.boxes[i].max);
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].material.diffuse', this.model.boxes[i].material.diffuse);
 		this.gpuTracer.SetUniformFloat ('uBoxes[' + i + '].material.reflection', this.model.boxes[i].material.reflection);
+	}
+	for (i = 0; i < this.model.planes.length; i++) {
+		this.gpuTracer.SetUniformVector ('uPlanes[' + i + '].origin', this.model.planes[i].origin);
+		this.gpuTracer.SetUniformVector ('uPlanes[' + i + '].normal', this.model.planes[i].normal);
+		this.gpuTracer.SetUniformVector ('uPlanes[' + i + '].material.diffuse', this.model.planes[i].material.diffuse);
+		this.gpuTracer.SetUniformFloat ('uPlanes[' + i + '].material.reflection', this.model.planes[i].material.reflection);
 	}
 	
 	return true;

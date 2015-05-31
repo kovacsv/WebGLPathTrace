@@ -76,6 +76,13 @@
 			Material material;
 		};
 
+		struct Plane
+		{
+			vec3 origin;
+			vec3 normal;
+			Material material;
+		};
+
 		struct Intersection
 		{
 			vec3 position;
@@ -89,6 +96,9 @@
 		#endif
 		#if BOX_COUNT > 0
 			uniform Box uBoxes[BOX_COUNT];
+		#endif
+		#if PLANE_COUNT > 0
+			uniform Plane uPlanes[PLANE_COUNT];
 		#endif
 
 		float Random (vec2 seed)
@@ -176,6 +186,29 @@
 			}
 		#endif
 
+		#if PLANE_COUNT > 0
+			Intersection RayPlaneIntersection (in Ray ray, in Plane plane)
+			{
+				Intersection result;
+				result.distance = INF;
+				float denom = dot (ray.direction, plane.normal);
+				if (denom > 0.0) {
+					return result;
+				}
+				
+				float distance = (dot (plane.origin - ray.origin, plane.normal)) / denom;
+				if (distance < EPS || distance > ray.length) {
+					return result;
+				}
+				
+				result.position = ray.origin + distance * ray.direction;
+				result.normal = plane.normal;
+				result.distance = distance;
+				result.material = plane.material;
+				return result;
+			}
+		#endif
+		
 		vec3 GetReflectedDirection (in vec3 direction, in vec3 normal)
 		{
 			float dotProduct = dot (normal, direction);
@@ -221,6 +254,11 @@
 					CHECK_INTERSECTION (RayBoxIntersection, uBoxes[i]);
 				}
 			#endif
+			#if PLANE_COUNT > 0
+				for (int i = 0; i < PLANE_COUNT; i++) {
+					CHECK_INTERSECTION (RayPlaneIntersection, uPlanes[i]);
+				}
+			#endif
 			return result;
 		}
 
@@ -257,7 +295,7 @@
 					currentColor = vec3 (1.0, 1.0, 1.0);
 				} else {
 					currentRay.direction = RandomDirOnHemisphere (intersection.normal, intersection.position.xy);	
-				}
+				};
 				currentRay.length = INF;
 			}
 			return shadedColor;
