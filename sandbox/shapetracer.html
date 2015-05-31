@@ -238,25 +238,32 @@
 			return diffuseColor * diffuseCoeff;
 		}
 		
-		#define CHECK_INTERSECTION(f, s) Intersection intersection = f (ray, s); if (intersection.distance < result.distance) { result = intersection; }
-
 		Intersection RayModelIntersection (in Ray ray)
 		{
 			Intersection result;
 			result.distance = INF;
 			#if SPHERE_COUNT > 0
 				for (int i = 0; i < SPHERE_COUNT; i++) {
-					CHECK_INTERSECTION (RaySphereIntersection, uSpheres[i]);
+					Intersection intersection = RaySphereIntersection (ray, uSpheres[i]);
+					if (intersection.distance < result.distance) {
+						result = intersection;
+					}
 				}
 			#endif
 			#if BOX_COUNT > 0
 				for (int i = 0; i < BOX_COUNT; i++) {
-					CHECK_INTERSECTION (RayBoxIntersection, uBoxes[i]);
+					Intersection intersection = RayBoxIntersection (ray, uBoxes[i]);
+					if (intersection.distance < result.distance) {
+						result = intersection;
+					}
 				}
 			#endif
 			#if PLANE_COUNT > 0
 				for (int i = 0; i < PLANE_COUNT; i++) {
-					CHECK_INTERSECTION (RayPlaneIntersection, uPlanes[i]);
+					Intersection intersection = RayPlaneIntersection (ray, uPlanes[i]);
+					if (intersection.distance < result.distance) {
+						result = intersection;
+					}
 				}
 			#endif
 			return result;
