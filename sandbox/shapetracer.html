@@ -108,11 +108,14 @@
 		}
 
 		#if SPHERE_COUNT > 0
-			Intersection RaySphereIntersection (in Ray ray, in Sphere sphere)
+			vec3 GetSphereNormal (in Sphere sphere, in vec3 intersection)
 			{
-				Intersection result;
-				result.distance = INF;
-				
+				vec3 normal = intersection - sphere.origin;
+				return normalize (normal);
+			}
+
+			float RaySphereIntersection (in Ray ray, in Sphere sphere)
+			{
 				vec3 sphereToRay = ray.origin - sphere.origin;
 				float a = dot (ray.direction, ray.direction);
 				float b = 2.0 * dot (sphereToRay, ray.direction);
@@ -120,7 +123,7 @@
 
 				float disc = b * b - 4.0 * a * c;
 				if (disc < EPS) {
-					return result;
+					return INF;
 				}
 
 				float t0 = (-b - sqrt (disc)) * 0.5;
@@ -128,77 +131,64 @@
 				float minT = min (t0, t1);
 				float maxT = max (t0, t1);
 				if (maxT < EPS || minT > maxT) {
-					return result;
+					return INF;
 				}
 
-				result.position = ray.origin + minT * ray.direction;
-				result.distance = minT;
-				result.normal = normalize (result.position - sphere.origin);
-				result.material = sphere.material;
-				return result;
+				return minT;
 			}
 		#endif
 
-		vec3 GetBoxNormal (in Box box, in vec3 intersection)
-		{
-			vec3 origin = (box.min + box.max) / 2.0;
-			vec3 originToIntersection = (intersection - origin) / (box.max - box.min);
-
-			float absX = abs (originToIntersection.x);
-			float absY = abs (originToIntersection.y);
-			float absZ = abs (originToIntersection.z);
-
-			vec3 normal;
-			normal.x = float (absX > absY && absX > absZ) * sign (originToIntersection.x);
-			normal.y = float (absY > absX && absY > absZ) * sign (originToIntersection.y);
-			normal.z = float (absZ > absX && absZ > absY) * sign (originToIntersection.z);
-			return normal;
-		}
-		
 		#if BOX_COUNT > 0
-			Intersection RayBoxIntersection (in Ray ray, in Box box)
+			vec3 GetBoxNormal (in Box box, in vec3 intersection)
 			{
-				Intersection result;
-				result.distance = INF;
+				vec3 origin = (box.min + box.max) / 2.0;
+				vec3 originToIntersection = (intersection - origin) / (box.max - box.min);
 
+				float absX = abs (originToIntersection.x);
+				float absY = abs (originToIntersection.y);
+				float absZ = abs (originToIntersection.z);
+
+				vec3 normal;
+				normal.x = float (absX > absY && absX > absZ) * sign (originToIntersection.x);
+				normal.y = float (absY > absX && absY > absZ) * sign (originToIntersection.y);
+				normal.z = float (absZ > absX && absZ > absY) * sign (originToIntersection.z);
+				return normalize (normal);
+			}
+
+			float RayBoxIntersection (in Ray ray, in Box box)
+			{
 				vec3 minDir = (box.min - ray.origin) / ray.direction;
 				vec3 maxDir = (box.max - ray.origin) / ray.direction;
+				
 				float minT = max (max (min (minDir.x, maxDir.x), min (minDir.y, maxDir.y)), min (minDir.z, maxDir.z));
 				float maxT = min (min (max (minDir.x, maxDir.x), max (minDir.y, maxDir.y)), max (minDir.z, maxDir.z));
 				if (maxT < EPS || minT > maxT) {
-					return result;
+					return INF;
 				}
-
-				vec3 intersection = ray.origin + minT * ray.direction;
 				
-				result.position = intersection;
-				result.normal = GetBoxNormal (box, intersection);
-				result.distance = minT;
-				result.material = box.material;
-				return result;
+				return minT;
 			}
 		#endif
 
 		#if PLANE_COUNT > 0
-			Intersection RayPlaneIntersection (in Ray ray, in Plane plane)
+			vec3 GetPlaneNormal (in Plane plane)
 			{
-				Intersection result;
-				result.distance = INF;
+				return normalize (plane.normal);
+			}
+
+			float RayPlaneIntersection (in Ray ray, in Plane plane)
+			{
 				float denom = dot (ray.direction, plane.normal);
 				if (denom > 0.0) {
-					return result;
+					return INF;
 				}
 				
 				float distance = (dot (plane.origin - ray.origin, plane.normal)) / denom;
 				if (distance < EPS || distance > ray.length) {
-					return result;
+					return INF;
 				}
 				
-				result.position = ray.origin + distance * ray.direction;
-				result.normal = plane.normal;
-				result.distance = distance;
-				result.material = plane.material;
-				return result;
+				return distance;
 			}
 		#endif
 		
@@ -237,25 +227,37 @@
 			result.distance = INF;
 			#if SPHERE_COUNT > 0
 				for (int i = 0; i < SPHERE_COUNT; i++) {
-					Intersection intersection = RaySphereIntersection (ray, uSpheres[i]);
-					if (intersection.distance < result.distance) {
-						result = intersection;
+					float distance = RaySphereIntersection (ray, uSpheres[i]);
+					if (distance < result.distance) {
+						vec3 intersection = ray.origin + distance * ray.direction;
+						result.position = intersection;
+						result.normal = GetSphereNormal (uSpheres[i], intersection);
+						result.distance = distance;
+						result.material = uSpheres[i].material;
 					}
 				}
 			#endif
 			#if BOX_COUNT > 0
 				for (int i = 0; i < BOX_COUNT; i++) {
-					Intersection intersection = RayBoxIntersection (ray, uBoxes[i]);
-					if (intersection.distance < result.distance) {
-						result = intersection;
+					float distance = RayBoxIntersection (ray, uBoxes[i]);
+					if (distance < result.distance) {
+						vec3 intersection = ray.origin + distance * ray.direction;
+						result.position = intersection;
+						result.normal = GetBoxNormal (uBoxes[i], intersection);
+						result.distance = distance;
+						result.material = uBoxes[i].material;
 					}
 				}
 			#endif
 			#if PLANE_COUNT > 0
 				for (int i = 0; i < PLANE_COUNT; i++) {
-					Intersection intersection = RayPlaneIntersection (ray, uPlanes[i]);
-					if (intersection.distance < result.distance) {
-						result = intersection;
+					float distance = RayPlaneIntersection (ray, uPlanes[i]);
+					if (distance < result.distance) {
+						vec3 intersection = ray.origin + distance * ray.direction;
+						result.position = intersection;
+						result.normal = GetPlaneNormal (uPlanes[i]);
+						result.distance = distance;
+						result.material = uPlanes[i].material;
 					}
 				}
 			#endif
