@@ -139,6 +139,22 @@
 			}
 		#endif
 
+		vec3 GetBoxNormal (in Box box, in vec3 intersection)
+		{
+			vec3 origin = (box.min + box.max) / 2.0;
+			vec3 originToIntersection = (intersection - origin) / (box.max - box.min);
+
+			float absX = abs (originToIntersection.x);
+			float absY = abs (originToIntersection.y);
+			float absZ = abs (originToIntersection.z);
+
+			vec3 normal;
+			normal.x = float (absX > absY && absX > absZ) * sign (originToIntersection.x);
+			normal.y = float (absY > absX && absY > absZ) * sign (originToIntersection.y);
+			normal.z = float (absZ > absX && absZ > absY) * sign (originToIntersection.z);
+			return normal;
+		}
+		
 		#if BOX_COUNT > 0
 			Intersection RayBoxIntersection (in Ray ray, in Box box)
 			{
@@ -153,8 +169,10 @@
 					return result;
 				}
 
-				result.position = ray.origin + minT * ray.direction;
-				result.normal = normalize (result.position - (box.min + box.max) / 2.0);
+				vec3 intersection = ray.origin + minT * ray.direction;
+				
+				result.position = intersection;
+				result.normal = GetBoxNormal (box, intersection);
 				result.distance = minT;
 				result.material = box.material;
 				return result;
