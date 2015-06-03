@@ -25,7 +25,7 @@ ShapeTracer.prototype.InitUserInterface = function (controlsElem)
 {
 	this.settings = {
 		light : {
-			position : new JSM.Coord (4.0, 2.0, 3.0),
+			position : new JSM.Coord (2.0, 1.5, 3.0),
 			radius : 0.5
 		}
 	};	
@@ -58,10 +58,6 @@ ShapeTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 		return false;
 	}
 	
-	if (!this.UpdateUniforms ()) {
-		return false;
-	}
-	
 	this.gpuTracer.StartInNormalMode ();	
 	return true;
 };
@@ -69,6 +65,14 @@ ShapeTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 ShapeTracer.prototype.Compile = function ()
 {
 	this.model = {
+		room : {
+			min : [-5, -5, -1],
+			max : [5, 5, 9],
+			material : {
+				diffuse : [0.9, 0.9, 0.9],
+				reflection : 0.0
+			}
+		},
 		spheres : [
 			{
 				origin : [2.0, 0.0, 0.0],
@@ -96,16 +100,6 @@ ShapeTracer.prototype.Compile = function ()
 					reflection : 0.0
 				}
 			}
-		],
-		planes : [
-			{
-				origin : [0, 0, -1.0],
-				normal : [0, 0, 1],
-				material : {
-					diffuse : [0.8, 0.8, 0.8],
-					reflection : 0.0
-				}
-			}
 		]
 	};
 	
@@ -113,8 +107,7 @@ ShapeTracer.prototype.Compile = function ()
 	timer.Start ();
 	var defines = [
 		'#define SPHERE_COUNT ' + this.model.spheres.length,
-		'#define BOX_COUNT ' + this.model.boxes.length,
-		'#define PLANE_COUNT ' + this.model.planes.length
+		'#define BOX_COUNT ' + this.model.boxes.length
 	].join ('\n');
 	var result = this.gpuTracer.Compile (defines + this.fragmentShader, function (error) {
 		console.log (error);
@@ -137,6 +130,11 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 	this.gpuTracer.SetUniformVector ('uLightPosition', [this.settings.light.position.x, this.settings.light.position.y, this.settings.light.position.z]);
 	this.gpuTracer.SetUniformFloat ('uLightRadius', this.settings.light.radius);
 
+	this.gpuTracer.SetUniformVector ('uRoomBox.min', this.model.room.min);
+	this.gpuTracer.SetUniformVector ('uRoomBox.max', this.model.room.max);
+	this.gpuTracer.SetUniformVector ('uRoomBox.material.diffuse', this.model.room.material.diffuse);
+	this.gpuTracer.SetUniformFloat ('uRoomBox.material.reflection', this.model.room.material.reflection);
+
 	var i;
 	for (i = 0; i < this.model.spheres.length; i++) {
 		this.gpuTracer.SetUniformVector ('uSpheres[' + i + '].origin', this.model.spheres[i].origin);
@@ -149,12 +147,6 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].max', this.model.boxes[i].max);
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].material.diffuse', this.model.boxes[i].material.diffuse);
 		this.gpuTracer.SetUniformFloat ('uBoxes[' + i + '].material.reflection', this.model.boxes[i].material.reflection);
-	}
-	for (i = 0; i < this.model.planes.length; i++) {
-		this.gpuTracer.SetUniformVector ('uPlanes[' + i + '].origin', this.model.planes[i].origin);
-		this.gpuTracer.SetUniformVector ('uPlanes[' + i + '].normal', this.model.planes[i].normal);
-		this.gpuTracer.SetUniformVector ('uPlanes[' + i + '].material.diffuse', this.model.planes[i].material.diffuse);
-		this.gpuTracer.SetUniformFloat ('uPlanes[' + i + '].material.reflection', this.model.planes[i].material.reflection);
 	}
 	
 	return true;

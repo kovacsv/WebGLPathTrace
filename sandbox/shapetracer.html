@@ -91,14 +91,12 @@
 			Material material;
 		};
 
+		uniform Box uRoomBox;
 		#if SPHERE_COUNT > 0
 			uniform Sphere uSpheres[SPHERE_COUNT];
 		#endif
 		#if BOX_COUNT > 0
 			uniform Box uBoxes[BOX_COUNT];
-		#endif
-		#if PLANE_COUNT > 0
-			uniform Plane uPlanes[PLANE_COUNT];
 		#endif
 
 		float Random (vec2 seed)
@@ -142,62 +140,63 @@
 		#endif
 
 		#if BOX_COUNT > 0
-			vec3 GetBoxNormal (in Box box, in vec3 intersection)
-			{
-				vec3 origin = (box.min + box.max) / 2.0;
-				vec3 originToIntersection = (intersection - origin) / (box.max - box.min);
-
-				float absX = abs (originToIntersection.x);
-				float absY = abs (originToIntersection.y);
-				float absZ = abs (originToIntersection.z);
-
-				vec3 normal;
-				normal.x = float (absX > absY && absX > absZ) * sign (originToIntersection.x);
-				normal.y = float (absY > absX && absY > absZ) * sign (originToIntersection.y);
-				normal.z = float (absZ > absX && absZ > absY) * sign (originToIntersection.z);
-				return normalize (normal);
-			}
-
 			float RayBoxIntersection (in Ray ray, in Box box)
 			{
-				vec3 minDir = (box.min - ray.origin) / ray.direction;
-				vec3 maxDir = (box.max - ray.origin) / ray.direction;
+				vec3 minT = (box.min - ray.origin) / ray.direction;
+				vec3 maxT = (box.max - ray.origin) / ray.direction;
 				
-				float minT = max (max (min (minDir.x, maxDir.x), min (minDir.y, maxDir.y)), min (minDir.z, maxDir.z));
-				float maxT = min (min (max (minDir.x, maxDir.x), max (minDir.y, maxDir.y)), max (minDir.z, maxDir.z));
-				if (maxT < EPS || minT > maxT) {
+				vec3 minVec = min (minT, maxT);
+				vec3 maxVec = max (minT, maxT);
+				float tNear = max (max (minVec.x, minVec.y), minVec.z);
+				float tFar = min (min (maxVec.x, maxVec.y), maxVec.z);
+				
+				if (tFar < EPS || tNear > tFar) {
 					return INF;
 				}
 				
-				if (minT > ray.length) {
+				if (tNear > ray.length) {
 					return INF;
 				}
-				return minT;
+				return tNear;
 			}
 		#endif
 
-		#if PLANE_COUNT > 0
-			vec3 GetPlaneNormal (in Plane plane)
-			{
-				return normalize (plane.normal);
-			}
+		vec3 GetBoxNormal (in Box box, in vec3 intersection)
+		{
+			vec3 origin = (box.min + box.max) / 2.0;
+			vec3 originToIntersection = (intersection - origin) / (box.max - box.min);
 
-			float RayPlaneIntersection (in Ray ray, in Plane plane)
-			{
-				float denom = dot (ray.direction, plane.normal);
-				if (denom > 0.0) {
-					return INF;
-				}
-				
-				float distance = (dot (plane.origin - ray.origin, plane.normal)) / denom;
-				if (distance < EPS || distance > ray.length) {
-					return INF;
-				}
-				
-				return distance;
+			float absX = abs (originToIntersection.x);
+			float absY = abs (originToIntersection.y);
+			float absZ = abs (originToIntersection.z);
+
+			vec3 normal;
+			normal.x = float (absX > absY && absX > absZ) * sign (originToIntersection.x);
+			normal.y = float (absY > absX && absY > absZ) * sign (originToIntersection.y);
+			normal.z = float (absZ > absX && absZ > absY) * sign (originToIntersection.z);
+			return normalize (normal);
+		}
+
+		float RoomBoxIntersection (in Ray ray, in Box box)
+		{
+			vec3 minT = (box.min - ray.origin) / ray.direction;
+			vec3 maxT = (box.max - ray.origin) / ray.direction;
+			
+			vec3 minVec = min (minT, maxT);
+			vec3 maxVec = max (minT, maxT);
+			
+			float tNear = max (max (minVec.x, minVec.y), minVec.z);
+			float tFar = min (min (maxVec.x, maxVec.y), maxVec.z);
+			if (tNear < EPS || tNear > tFar) {
+				return INF;
 			}
-		#endif
-		
+			
+			if (tFar > ray.length) {
+				return INF;
+			}
+			return tFar;
+		}			
+
 		vec3 GetReflectedDirection (in vec3 direction, in vec3 normal)
 		{
 			float dotProduct = dot (normal, direction);
@@ -255,18 +254,20 @@
 					}
 				}
 			#endif
-			#if PLANE_COUNT > 0
-				for (int i = 0; i < PLANE_COUNT; i++) {
-					float distance = RayPlaneIntersection (ray, uPlanes[i]);
-					if (distance < result.distance) {
-						vec3 intersection = ray.origin + distance * ray.direction;
-						result.position = intersection;
-						result.normal = GetPlaneNormal (uPlanes[i]);
-						result.distance = distance;
-						result.material = uPlanes[i].material;
-					}
-				}
-			#endif
+			
+			Box roomBox;
+			roomBox.min = vec3 (-1.0, -1.0, -1.0);
+			roomBox.max = vec3 (1.0, 1.0, 1.0);
+			roomBox.material.diffuse = vec3 (0.9, 0.9, 0.9);
+			roomBox.material.reflection = 0.0;
+			float roomDistance = RoomBoxIntersection (ray, uRoomBox);
+			if (roomDistance < result.distance) {
+				vec3 intersection = ray.origin + roomDistance * ray.direction;
+				result.position = intersection;
+				result.normal = -GetBoxNormal (uRoomBox, intersection);
+				result.distance = roomDistance;
+				result.material = uRoomBox.material;
+			}
 			return result;
 		}
 
