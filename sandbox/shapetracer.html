@@ -105,61 +105,37 @@
 			return fract (sin (dot (theSeed, vec2 (12.9898,78.233))) * 43758.5453);
 		}
 
-		#if SPHERE_COUNT > 0
-			vec3 GetSphereNormal (in Sphere sphere, in vec3 intersection)
-			{
-				vec3 normal = intersection - sphere.origin;
-				return normalize (normal);
+		vec3 GetSphereNormal (in Sphere sphere, in vec3 intersection)
+		{
+			vec3 normal = intersection - sphere.origin;
+			return normalize (normal);
+		}
+
+		float RaySphereIntersection (in Ray ray, in Sphere sphere)
+		{
+			vec3 sphereToRay = ray.origin - sphere.origin;
+			float a = dot (ray.direction, ray.direction);
+			float b = 2.0 * dot (sphereToRay, ray.direction);
+			float c = dot (sphereToRay, sphereToRay) - sphere.radius * sphere.radius;
+
+			float disc = b * b - 4.0 * a * c;
+			if (disc < EPS) {
+				return INF;
 			}
 
-			float RaySphereIntersection (in Ray ray, in Sphere sphere)
-			{
-				vec3 sphereToRay = ray.origin - sphere.origin;
-				float a = dot (ray.direction, ray.direction);
-				float b = 2.0 * dot (sphereToRay, ray.direction);
-				float c = dot (sphereToRay, sphereToRay) - sphere.radius * sphere.radius;
-
-				float disc = b * b - 4.0 * a * c;
-				if (disc < EPS) {
-					return INF;
-				}
-
-				float t0 = (-b - sqrt (disc)) * 0.5;
-				float t1 = (-b + sqrt (disc)) * 0.5;
-				float minT = min (t0, t1);
-				float maxT = max (t0, t1);
-				if (maxT < EPS || minT > maxT) {
-					return INF;
-				}
-
-				if (minT > ray.length) {
-					return INF;
-				}
-				return minT;
+			float t0 = (-b - sqrt (disc)) * 0.5;
+			float t1 = (-b + sqrt (disc)) * 0.5;
+			float minT = min (t0, t1);
+			float maxT = max (t0, t1);
+			if (maxT < EPS || minT > maxT) {
+				return INF;
 			}
-		#endif
 
-		#if BOX_COUNT > 0
-			float RayBoxIntersection (in Ray ray, in Box box)
-			{
-				vec3 minT = (box.min - ray.origin) / ray.direction;
-				vec3 maxT = (box.max - ray.origin) / ray.direction;
-				
-				vec3 minVec = min (minT, maxT);
-				vec3 maxVec = max (minT, maxT);
-				float tNear = max (max (minVec.x, minVec.y), minVec.z);
-				float tFar = min (min (maxVec.x, maxVec.y), maxVec.z);
-				
-				if (tFar < EPS || tNear > tFar) {
-					return INF;
-				}
-				
-				if (tNear > ray.length) {
-					return INF;
-				}
-				return tNear;
+			if (minT > ray.length) {
+				return INF;
 			}
-		#endif
+			return minT;
+		}
 
 		vec3 GetBoxNormal (in Box box, in vec3 intersection)
 		{
@@ -177,25 +153,26 @@
 			return normalize (normal);
 		}
 
-		float RoomBoxIntersection (in Ray ray, in Box box)
+		float RayBoxIntersection (in Ray ray, in Box box, in bool insideOut)
 		{
 			vec3 minT = (box.min - ray.origin) / ray.direction;
 			vec3 maxT = (box.max - ray.origin) / ray.direction;
 			
 			vec3 minVec = min (minT, maxT);
 			vec3 maxVec = max (minT, maxT);
-			
 			float tNear = max (max (minVec.x, minVec.y), minVec.z);
 			float tFar = min (min (maxVec.x, maxVec.y), maxVec.z);
-			if (tNear < EPS || tNear > tFar) {
+			
+			if (tFar < EPS || tNear > tFar) {
 				return INF;
 			}
 			
-			if (tFar > ray.length) {
+			float distance = insideOut ? tFar : tNear;
+			if (distance > ray.length) {
 				return INF;
 			}
-			return tFar;
-		}			
+			return distance;
+		}
 
 		vec3 GetReflectedDirection (in vec3 direction, in vec3 normal)
 		{
@@ -244,7 +221,7 @@
 			#endif
 			#if BOX_COUNT > 0
 				for (int i = 0; i < BOX_COUNT; i++) {
-					float distance = RayBoxIntersection (ray, uBoxes[i]);
+					float distance = RayBoxIntersection (ray, uBoxes[i], false);
 					if (distance < result.distance) {
 						vec3 intersection = ray.origin + distance * ray.direction;
 						result.position = intersection;
@@ -254,19 +231,15 @@
 					}
 				}
 			#endif
-			
-			Box roomBox;
-			roomBox.min = vec3 (-1.0, -1.0, -1.0);
-			roomBox.max = vec3 (1.0, 1.0, 1.0);
-			roomBox.material.diffuse = vec3 (0.9, 0.9, 0.9);
-			roomBox.material.reflection = 0.0;
-			float roomDistance = RoomBoxIntersection (ray, uRoomBox);
+
+			float roomDistance = RayBoxIntersection (ray, uRoomBox, true);
 			if (roomDistance < result.distance) {
 				vec3 intersection = ray.origin + roomDistance * ray.direction;
 				result.position = intersection;
 				result.normal = -GetBoxNormal (uRoomBox, intersection);
 				result.distance = roomDistance;
 				result.material = uRoomBox.material;
+				//result.material.diffuse = result.normal;
 			}
 			return result;
 		}

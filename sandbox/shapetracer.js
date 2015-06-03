@@ -25,7 +25,7 @@ ShapeTracer.prototype.InitUserInterface = function (controlsElem)
 {
 	this.settings = {
 		light : {
-			position : new JSM.Coord (2.0, 1.5, 3.0),
+			position : new JSM.Coord (3, 2, 4),
 			radius : 0.5
 		}
 	};	
@@ -39,12 +39,12 @@ ShapeTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 	this.fragmentShader = fragmentShaderElem.childNodes[0].nodeValue;
 
 	var camera = new JSM.Camera (
-		new JSM.Coord (4, 1, 2),
-		new JSM.Coord (0, 0, 0),
+		new JSM.Coord (5, 3, 4),
+		new JSM.Coord (0, 0, 1),
 		new JSM.Coord (0, 0, 1)
 	);
 	
-	var maxIteration = 32;
+	var maxIteration = 256;
 	var myThis = this;
 	
 	this.gpuTracer = new GPUTracer ();
@@ -66,37 +66,37 @@ ShapeTracer.prototype.Compile = function ()
 {
 	this.model = {
 		room : {
-			min : [-5, -5, -1],
-			max : [5, 5, 9],
+			min : [-5, -5, 0],
+			max : [5, 5, 10],
 			material : {
-				diffuse : [0.9, 0.9, 0.9],
+				diffuse : [0.6, 0.6, 0.6],
 				reflection : 0.0
 			}
 		},
 		spheres : [
 			{
-				origin : [2.0, 0.0, 0.0],
+				origin : [2.0, 0.0, 1.0],
 				radius : 1.0,
 				material : {
-					diffuse : [0.0, 0.8, 0.0],
+					diffuse : [0.0, 0.0, 0.7],
 					reflection : 0.0
 				}
 			},
 			{
-				origin : [0.0, 2.0, 0.0],
+				origin : [0.0, 2.0, 1.0],
 				radius : 1.0,
 				material : {
-					diffuse : [0.0, 0.8, 0.0],
+					diffuse : [0.0, 0.7, 0.0],
 					reflection : 0.0
 				}
 			}
 		],
 		boxes : [
 			{
-				min : [-1, -1, -1],
-				max : [1, 1, 1],
+				min : [-1, -1, 0],
+				max : [1, 1, 2],
 				material : {
-					diffuse : [0.8, 0.0, 0.0],
+					diffuse : [0.7, 0.0, 0.0],
 					reflection : 0.0
 				}
 			}
