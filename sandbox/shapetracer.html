@@ -141,7 +141,7 @@
 				return INF;
 			}
 
-			if (minT < 0.0 || minT > ray.length) {
+			if (minT > ray.length) {
 				return INF;
 			}
 			return minT;
@@ -198,12 +198,12 @@
 		float RayPlaneIntersection (in Ray ray, in Plane plane)
 		{
 			float denom = dot (ray.direction, plane.normal);
-			if (denom > 0.0) {
+			if (denom > EPS) {
 				return INF;
 			}
 			
 			float distance = (dot (plane.origin - ray.origin, plane.normal)) / denom;
-			if (distance < 0.0 || distance > ray.length) {
+			if (distance < EPS || distance > ray.length) {
 				return INF;
 			}
 			
@@ -233,7 +233,7 @@
 
 			float angle = acos (dot (ray.direction, vec3 (rayDirection2D, 0.0)));
 			float distance = minT / cos (angle);
-			if (distance < 0.0) {
+			if (distance < EPS) {
 				return INF;
 			}
 			
