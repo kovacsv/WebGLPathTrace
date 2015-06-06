@@ -74,40 +74,33 @@ ShapeTracer.prototype.Compile = function ()
 			}
 		},
 		spheres : [
-			//{
-			//	origin : [2.0, 0.0, 1.0],
-			//	radius : 1.0,
-			//	material : {
-			//		diffuse : [0.0, 0.0, 0.7],
-			//		reflection : 0.0
-			//	}
-			//},
-			//{
-			//	origin : [0.0, 2.0, 1.0],
-			//	radius : 1.0,
-			//	material : {
-			//		diffuse : [0.0, 0.7, 0.0],
-			//		reflection : 0.0
-			//	}
-			//}
+			{
+				origin : [2.5, 0, 1],
+				radius : 1.0,
+				material : {
+					diffuse : [0.0, 0.0, 0.7],
+					reflection : 0.3
+				}
+			}
 		],
 		boxes : [
-			//{
-			//	min : [-1, -1, 0],
-			//	max : [1, 1, 2],
-			//	material : {
-			//		diffuse : [0.7, 0.0, 0.0],
-			//		reflection : 0.0
-			//	}
-			//}
+			{
+				min : [-1, -1, 0],
+				max : [1, 1, 2],
+				material : {
+					diffuse : [0.7, 0.0, 0.0],
+					reflection : 0.3
+				}
+			}
 		],
 		cylinders : [
 			{
-				origin : [0, 0, 0],
+				origin : [-2.5, 0, 0],
 				radius : 1,
+				height : 3,
 				material : {
-					diffuse : [0.7, 0.0, 0.0],
-					reflection : 0.0
+					diffuse : [0.0, 0.7, 0.0],
+					reflection : 0.3
 				}
 			}
 		]
@@ -162,6 +155,7 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 	for (i = 0; i < this.model.cylinders.length; i++) {
 		this.gpuTracer.SetUniformVector ('uCylinders[' + i + '].origin', this.model.cylinders[i].origin);
 		this.gpuTracer.SetUniformFloat ('uCylinders[' + i + '].radius', this.model.cylinders[i].radius);
+		this.gpuTracer.SetUniformFloat ('uCylinders[' + i + '].height', this.model.cylinders[i].height);
 		this.gpuTracer.SetUniformVector ('uCylinders[' + i + '].material.diffuse', this.model.cylinders[i].material.diffuse);
 		this.gpuTracer.SetUniformFloat ('uCylinders[' + i + '].material.reflection', this.model.cylinders[i].material.reflection);
 	}
