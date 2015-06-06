@@ -76,12 +76,6 @@
 			Material material;
 		};
 
-		struct Plane
-		{
-			vec3 origin;
-			vec3 normal;
-		};
-		
 		struct Cylinder
 		{
 			vec3 origin;
@@ -195,18 +189,22 @@
 			return normalize (normal);
 		}
 
-		float RayPlaneIntersection (in Ray ray, in Plane plane)
+		float RayCircleIntersection (in Ray ray, in vec3 origin, in vec3 normal, in float radius)
 		{
-			float denom = dot (ray.direction, plane.normal);
+			float denom = dot (ray.direction, normal);
 			if (denom > EPS) {
 				return INF;
 			}
 			
-			float distance = (dot (plane.origin - ray.origin, plane.normal)) / denom;
+			float distance = (dot (origin - ray.origin, normal)) / denom;
 			if (distance < EPS || distance > ray.length) {
 				return INF;
 			}
 			
+			vec3 intersection = ray.origin + distance * ray.direction;
+			if (length (intersection - origin) > radius) {
+				return INF;					
+			}
 			return distance;
 		}
 
@@ -233,32 +231,13 @@
 
 			float angle = acos (dot (ray.direction, vec3 (rayDirection2D, 0.0)));
 			float distance = minT / cos (angle);
-			if (distance < EPS) {
-				return INF;
-			}
-			
 			vec3 intersection = ray.origin + distance * ray.direction;
-			if (intersection.z < cylinder.origin.z) {
-				Plane plane;
-				plane.origin = cylinder.origin;
-				plane.normal = vec3 (0.0, 0.0, -1.0);
-				float planeDistance = RayPlaneIntersection (ray, plane);
-				vec3 planeIntersection = ray.origin + planeDistance * ray.direction;
-				if (length (planeIntersection - plane.origin) > cylinder.radius) {
-					return INF;					
-				}
-				distance = planeDistance;
-			} else if (intersection.z > cylinder.origin.z + cylinder.height) {
-				Plane plane;
-				plane.origin = cylinder.origin + vec3 (0.0, 0.0, cylinder.height);
-				plane.normal = vec3 (0.0, 0.0, 1.0);
-				float planeDistance = RayPlaneIntersection (ray, plane);
-				vec3 planeIntersection = ray.origin + planeDistance * ray.direction;
-				if (length (planeIntersection - plane.origin) > cylinder.radius) {
-					return INF;					
-				}
-				distance = planeDistance;
+			if (intersection.z < cylinder.origin.z || intersection.z > cylinder.origin.z + cylinder.height || distance < EPS) {
+				float topDistance = RayCircleIntersection (ray, cylinder.origin + vec3 (0.0, 0.0, cylinder.height), vec3 (0.0, 0.0, 1.0), cylinder.radius);
+				float bottomDistance = RayCircleIntersection (ray, cylinder.origin, vec3 (0.0, 0.0, -1.0), cylinder.radius);
+				distance = min (topDistance, bottomDistance);
 			}
+
 			if (distance > ray.length) {
 				return INF;
 			}

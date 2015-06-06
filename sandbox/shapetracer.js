@@ -66,8 +66,8 @@ ShapeTracer.prototype.Compile = function ()
 {
 	this.model = {
 		room : {
-			min : [-5, -5, 0],
-			max : [5, 5, 10],
+			min : [-10, -10, 0],
+			max : [10, 10, 20],
 			material : {
 				diffuse : [0.6, 0.6, 0.6],
 				reflection : 0.0
