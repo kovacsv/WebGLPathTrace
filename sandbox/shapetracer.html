@@ -203,7 +203,7 @@
 			}
 			
 			float distance = (dot (plane.origin - ray.origin, plane.normal)) / denom;
-			if (distance < EPS || distance > ray.length) {
+			if (distance < 0.0 || distance > ray.length) {
 				return INF;
 			}
 			

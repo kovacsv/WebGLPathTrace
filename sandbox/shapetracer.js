@@ -79,7 +79,7 @@ ShapeTracer.prototype.Compile = function ()
 				radius : 1.0,
 				material : {
 					diffuse : [0.0, 0.0, 0.7],
-					reflection : 0.3
+					reflection : 0.0
 				}
 			}
 		],
@@ -89,7 +89,7 @@ ShapeTracer.prototype.Compile = function ()
 				max : [1, 1, 2],
 				material : {
 					diffuse : [0.7, 0.0, 0.0],
-					reflection : 0.3
+					reflection : 0.0
 				}
 			}
 		],
@@ -97,10 +97,10 @@ ShapeTracer.prototype.Compile = function ()
 			{
 				origin : [-2.5, 0, 0],
 				radius : 1,
-				height : 3,
+				height : 2,
 				material : {
 					diffuse : [0.0, 0.7, 0.0],
-					reflection : 0.3
+					reflection : 0.0
 				}
 			}
 		]
