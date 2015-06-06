@@ -76,10 +76,10 @@
 			Material material;
 		};
 
-		struct Plane
+		struct Cylinder
 		{
 			vec3 origin;
-			vec3 normal;
+			float radius;
 			Material material;
 		};
 
@@ -97,6 +97,9 @@
 		#endif
 		#if BOX_COUNT > 0
 			uniform Box uBoxes[BOX_COUNT];
+		#endif
+		#if CYLINDER_COUNT > 0
+			uniform Cylinder uCylinders[CYLINDER_COUNT];
 		#endif
 
 		float Random (vec2 seed)
@@ -123,15 +126,15 @@
 				return INF;
 			}
 
-			float t0 = (-b - sqrt (disc)) * 0.5;
-			float t1 = (-b + sqrt (disc)) * 0.5;
+			float t0 = (-b - sqrt (disc)) * a * 0.5;
+			float t1 = (-b + sqrt (disc)) * a * 0.5;
 			float minT = min (t0, t1);
 			float maxT = max (t0, t1);
 			if (maxT < EPS || minT > maxT) {
 				return INF;
 			}
 
-			if (minT > ray.length) {
+			if (minT < 0.0 || minT > ray.length) {
 				return INF;
 			}
 			return minT;
@@ -169,6 +172,41 @@
 			
 			float distance = insideOut ? tFar : tNear;
 			if (distance > ray.length) {
+				return INF;
+			}
+			return distance;
+		}
+
+		vec3 GetCylinderNormal (in Cylinder cylinder, in vec3 intersection)
+		{
+			vec3 normal = intersection - vec3 (cylinder.origin.xy, intersection.z);
+			return normalize (normal);
+		}
+		
+		float RayCylinderIntersection (in Ray ray, in Cylinder cylinder)
+		{
+			vec2 rayOrigin2D = ray.origin.xy - cylinder.origin.xy;
+			vec2 rayDirection2D = normalize (ray.direction.xy);
+			float a = rayDirection2D.x * rayDirection2D.x + rayDirection2D.y * rayDirection2D.y;
+			float b = 2.0 * (rayOrigin2D.x * rayDirection2D.x + rayOrigin2D.y * rayDirection2D.y);
+			float c = rayOrigin2D.x * rayOrigin2D.x + rayOrigin2D.y * rayOrigin2D.y - cylinder.radius * cylinder.radius;
+
+			float disc = b * b - 4.0 * a * c;
+			if (disc < EPS) {
+				return INF;
+			}
+
+			float t0 = (-b - sqrt (disc)) * a * 0.5;
+			float t1 = (-b + sqrt (disc)) * a * 0.5;
+			float minT = min (t0, t1);
+			float maxT = max (t0, t1);
+			if (maxT < EPS || minT > maxT) {
+				return INF;
+			}
+
+			float angle = acos (dot (ray.direction, vec3 (rayDirection2D, 0.0)));
+			float distance = minT / cos (angle);
+			if (distance < 0.0 || distance > ray.length) {
 				return INF;
 			}
 			return distance;
@@ -231,6 +269,18 @@
 					}
 				}
 			#endif
+			#if CYLINDER_COUNT > 0
+				for (int i = 0; i < CYLINDER_COUNT; i++) {
+					float distance = RayCylinderIntersection (ray, uCylinders[i]);
+					if (distance < result.distance) {
+						vec3 intersection = ray.origin + distance * ray.direction;
+						result.position = intersection;
+						result.normal = GetCylinderNormal (uCylinders[i], intersection);
+						result.distance = distance;
+						result.material = uCylinders[i].material;
+					}
+				}
+			#endif
 
 			float roomDistance = RayBoxIntersection (ray, uRoomBox, true);
 			if (roomDistance < result.distance) {
@@ -265,10 +315,10 @@
 				lightRay.direction = direction;
 				lightRay.length = length (randomLightPoint - intersection.position);
 				Intersection lightIntersection = RayModelIntersection (lightRay);
-				if (lightIntersection.distance == INF) {
+				//if (lightIntersection.distance == INF) {
 					vec3 directLightColor = PhongShading (intersection.position, intersection.normal, randomLightPoint, material);
 					shadedColor += currentColor * directLightColor;
-				}
+				//}
 				
 				currentRay.origin = intersection.position;
 				if (Random (intersection.position.xy) < material.reflection) {

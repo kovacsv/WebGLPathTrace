@@ -74,27 +74,37 @@ ShapeTracer.prototype.Compile = function ()
 			}
 		},
 		spheres : [
-			{
-				origin : [2.0, 0.0, 1.0],
-				radius : 1.0,
-				material : {
-					diffuse : [0.0, 0.0, 0.7],
-					reflection : 0.0
-				}
-			},
-			{
-				origin : [0.0, 2.0, 1.0],
-				radius : 1.0,
-				material : {
-					diffuse : [0.0, 0.7, 0.0],
-					reflection : 0.0
-				}
-			}
+			//{
+			//	origin : [2.0, 0.0, 1.0],
+			//	radius : 1.0,
+			//	material : {
+			//		diffuse : [0.0, 0.0, 0.7],
+			//		reflection : 0.0
+			//	}
+			//},
+			//{
+			//	origin : [0.0, 2.0, 1.0],
+			//	radius : 1.0,
+			//	material : {
+			//		diffuse : [0.0, 0.7, 0.0],
+			//		reflection : 0.0
+			//	}
+			//}
 		],
 		boxes : [
+			//{
+			//	min : [-1, -1, 0],
+			//	max : [1, 1, 2],
+			//	material : {
+			//		diffuse : [0.7, 0.0, 0.0],
+			//		reflection : 0.0
+			//	}
+			//}
+		],
+		cylinders : [
 			{
-				min : [-1, -1, 0],
-				max : [1, 1, 2],
+				origin : [0, 0, 0],
+				radius : 1,
 				material : {
 					diffuse : [0.7, 0.0, 0.0],
 					reflection : 0.0
@@ -107,7 +117,8 @@ ShapeTracer.prototype.Compile = function ()
 	timer.Start ();
 	var defines = [
 		'#define SPHERE_COUNT ' + this.model.spheres.length,
-		'#define BOX_COUNT ' + this.model.boxes.length
+		'#define BOX_COUNT ' + this.model.boxes.length,
+		'#define CYLINDER_COUNT ' + this.model.cylinders.length
 	].join ('\n');
 	var result = this.gpuTracer.Compile (defines + this.fragmentShader, function (error) {
 		console.log (error);
@@ -147,6 +158,12 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].max', this.model.boxes[i].max);
 		this.gpuTracer.SetUniformVector ('uBoxes[' + i + '].material.diffuse', this.model.boxes[i].material.diffuse);
 		this.gpuTracer.SetUniformFloat ('uBoxes[' + i + '].material.reflection', this.model.boxes[i].material.reflection);
+	}
+	for (i = 0; i < this.model.cylinders.length; i++) {
+		this.gpuTracer.SetUniformVector ('uCylinders[' + i + '].origin', this.model.cylinders[i].origin);
+		this.gpuTracer.SetUniformFloat ('uCylinders[' + i + '].radius', this.model.cylinders[i].radius);
+		this.gpuTracer.SetUniformVector ('uCylinders[' + i + '].material.diffuse', this.model.cylinders[i].material.diffuse);
+		this.gpuTracer.SetUniformFloat ('uCylinders[' + i + '].material.reflection', this.model.cylinders[i].material.reflection);
 	}
 	
 	return true;
