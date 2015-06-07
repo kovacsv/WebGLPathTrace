@@ -70,6 +70,11 @@ GPUTracer.prototype.Start = function ()
 	this.StartInNormalMode ();
 };
 
+GPUTracer.prototype.ToDataURL = function ()
+{
+	return this.canvas.toDataURL ('image/png');
+};
+
 GPUTracer.prototype.StartInPreviewMode = function ()
 {
 	var isRendering = this.iteration > 0;

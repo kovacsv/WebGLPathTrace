@@ -1,7 +1,5 @@
 ShapeTracer = function ()
 {
-	this.canvas = null;
-	this.context = null;
 	this.gpuTracer = null;
 	this.fragmentShader = null;
 	this.settings = null;
@@ -25,17 +23,43 @@ ShapeTracer.prototype.InitUserInterface = function (controlsElem)
 {
 	this.settings = {
 		light : {
-			position : new JSM.Coord (3, 2, 4),
+			rotation : 1.0,
+			distance : 3.0,
+			height : 5.0,
 			radius : 0.5
 		}
 	};	
 	
+	var myThis = this;
+	
+	UserInterface.AddTitle (controlsElem, 'light position');
+	mainElem = UserInterface.AddMainElem (controlsElem);
+	UserInterface.AddSliderControl (mainElem, 'rotation', UserInterface.ToSlider (this.settings.light.rotation, 0.0, 2.0 * Math.PI), function (ratio) {
+		myThis.settings.light.rotation = UserInterface.FromSlider (ratio, 0.0, 2.0 * Math.PI);
+		myThis.UpdateUniforms ();
+		myThis.StartRender (true);		
+	});
+	UserInterface.AddSliderControl (mainElem, 'distance', UserInterface.ToSlider (myThis.settings.light.distance, 1.0, 5.0), function (ratio) {
+		myThis.settings.light.distance = UserInterface.FromSlider (ratio, 1.0, 5.0);
+		myThis.UpdateUniforms ();
+		myThis.StartRender (true);		
+	});	
+	UserInterface.AddSliderControl (mainElem, 'height', UserInterface.ToSlider (myThis.settings.light.height, 1.0, 8.0), function (ratio) {
+		myThis.settings.light.height = UserInterface.FromSlider (ratio, 1.0, 8.0);
+		myThis.UpdateUniforms ();
+		myThis.StartRender (true);		
+	});	
+    UserInterface.AddSliderControl (mainElem, 'radius', UserInterface.ToSlider (myThis.settings.light.radius, 0.0, 1.0), function (ratio) {
+		myThis.settings.light.radius = UserInterface.FromSlider (ratio, 0.0, 1.0);
+		myThis.UpdateUniforms ();
+		myThis.StartRender (true);		
+	});
+
 	return true;
 };
 
 ShapeTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 {
-	this.canvas = canvasElem;
 	this.fragmentShader = fragmentShaderElem.childNodes[0].nodeValue;
 
 	var camera = new JSM.Camera (
@@ -50,7 +74,7 @@ ShapeTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 	this.gpuTracer = new GPUTracer ();
 	var callbacks = {};
 	
-	if (!this.gpuTracer.Init (this.canvas, camera, maxIteration, callbacks)) {
+	if (!this.gpuTracer.Init (canvasElem, camera, maxIteration, callbacks)) {
 		return false;
 	}
 	
@@ -58,7 +82,7 @@ ShapeTracer.prototype.InitRenderer = function (canvasElem, fragmentShaderElem)
 		return false;
 	}
 	
-	this.gpuTracer.StartInNormalMode ();	
+	this.StartRender (false);
 	return true;
 };
 
@@ -129,9 +153,18 @@ ShapeTracer.prototype.Compile = function ()
 
 ShapeTracer.prototype.UpdateUniforms = function ()
 {
+	function GetLightPosition (lightData)
+	{
+		var origo = new JSM.Coord2D (0.0, 0.0);
+		var lightPosition = JSM.CoordRotate2D (new JSM.Coord2D (1.0, 0.0), lightData.rotation, origo);
+		lightPosition = JSM.VectorSetLength2D (lightPosition, lightData.distance);
+		return new JSM.Coord (lightPosition.x, lightPosition.y, lightData.height);
+	}
+
 	this.gpuTracer.GetNavigation ().SetNearDistanceLimit (1.0);
 	this.gpuTracer.GetNavigation ().SetFarDistanceLimit (20.0);
-	this.gpuTracer.SetUniformVector ('uLightPosition', [this.settings.light.position.x, this.settings.light.position.y, this.settings.light.position.z]);
+	var lightPosition = GetLightPosition (this.settings.light);
+	this.gpuTracer.SetUniformVector ('uLightPosition', [lightPosition.x, lightPosition.y, lightPosition.z]);
 	this.gpuTracer.SetUniformFloat ('uLightRadius', this.settings.light.radius);
 
 	this.gpuTracer.SetUniformVector ('uRoomBox.min', this.model.room.min);
@@ -161,4 +194,13 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 	}
 	
 	return true;
+};
+
+ShapeTracer.prototype.StartRender = function (isPreviewMode)
+{
+	if (isPreviewMode) {
+		this.gpuTracer.StartInPreviewMode ();
+	} else {
+		this.gpuTracer.StartInNormalMode ();
+	}
 };
