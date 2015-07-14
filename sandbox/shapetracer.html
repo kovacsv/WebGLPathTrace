@@ -398,10 +398,13 @@
 		window.onload = function () {
 			var canvasElem = document.getElementById ('render');
 			var controlsElem = document.getElementById ('controls');
+			var containerElem = document.getElementById ('container');
 			var fragmentShaderElem = document.getElementById ('fragmentshader');
 
 			var shapeTracer = new ShapeTracer ();
-			shapeTracer.Init (canvasElem, controlsElem, fragmentShaderElem);
+			if (!shapeTracer.Init (canvasElem, controlsElem, fragmentShaderElem)) {
+				UserInterface.ShowError (containerElem);
+			}
 		}
 	</script>
 
@@ -419,11 +422,13 @@
 				...
 			</p>
 		</div>
-		<div class="container">
+		<div class="container" id="container">
 			<div class="content">
 				<div class="canvas">
 					<canvas id="render" width="512" height="512"></canvas>
 				</div>
+			</div>
+			<div class="buttons" id="buttons">
 			</div>
 			<div class="controls" id="controls">
 			</div>

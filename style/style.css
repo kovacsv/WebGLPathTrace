@@ -26,6 +26,12 @@ div.text
 	margin : 30px 0px;
 }
 
+div.error
+{
+	font-size : 17px;
+	text-align : center;
+}
+
 div.container
 {
 	overflow : auto;

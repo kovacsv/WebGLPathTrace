@@ -1,5 +1,16 @@
 var UserInterface = {};
 
+UserInterface.ShowError = function (containerElem)
+{
+	while (containerElem.lastChild) {
+		containerElem.removeChild (containerElem.lastChild);
+	}
+	var errorDiv = document.createElement ('div');
+	errorDiv.innerHTML = 'Your browser does not support this application.';
+	errorDiv.className = 'error';
+	containerElem.appendChild (errorDiv);
+};
+
 UserInterface.AddTitle = function (parent, title)
 {
 	var div = document.createElement ('div');
