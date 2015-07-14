@@ -44,8 +44,8 @@ ShapeTracer.prototype.InitUserInterface = function (controlsElem)
 		myThis.UpdateUniforms ();
 		myThis.StartRender (true);		
 	});	
-	UserInterface.AddSliderControl (mainElem, 'height', UserInterface.ToSlider (myThis.settings.light.height, 1.0, 8.0), function (ratio) {
-		myThis.settings.light.height = UserInterface.FromSlider (ratio, 1.0, 8.0);
+	UserInterface.AddSliderControl (mainElem, 'height', UserInterface.ToSlider (myThis.settings.light.height, 3.0, 8.0), function (ratio) {
+		myThis.settings.light.height = UserInterface.FromSlider (ratio, 3.0, 8.0);
 		myThis.UpdateUniforms ();
 		myThis.StartRender (true);		
 	});	
