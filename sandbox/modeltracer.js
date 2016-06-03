@@ -123,6 +123,7 @@ ModelTracer.prototype.UpdateUniforms = function ()
 		var i, material;
 		for (i = 0; i < model.MaterialCount (); i++) {
 			material = model.GetMaterial (i);
+			// TODO: reflection should be stored in the alpha channel
 			result.push (material.diffuse[0], material.diffuse[1], material.diffuse[2], 0.0);
 			result.push (material.reflection, 0.0, 0.0, 0.0);
 		}
