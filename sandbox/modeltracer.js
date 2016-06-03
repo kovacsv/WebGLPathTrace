@@ -105,13 +105,13 @@ ModelTracer.prototype.UpdateUniforms = function ()
 				n0 = body.GetNormal (triangle.n0);
 				n1 = body.GetNormal (triangle.n1);
 				n2 = body.GetNormal (triangle.n2);
-				result.push (v0.x, v0.y, v0.z);
-				result.push (v1.x, v1.y, v1.z);
-				result.push (v2.x, v2.y, v2.z);
-				result.push (n0.x, n0.y, n0.z);
-				result.push (n1.x, n1.y, n1.z);
-				result.push (n2.x, n2.y, n2.z);
-				result.push (triangle.mat, 0.0, 0.0);
+				result.push (v0.x, v0.y, v0.z, 0.0);
+				result.push (v1.x, v1.y, v1.z, 0.0);
+				result.push (v2.x, v2.y, v2.z, 0.0);
+				result.push (n0.x, n0.y, n0.z, 0.0);
+				result.push (n1.x, n1.y, n1.z, 0.0);
+				result.push (n2.x, n2.y, n2.z, 0.0);
+				result.push (triangle.mat, 0.0, 0.0, 0.0);
 			}
 		}
 		return result;
@@ -123,8 +123,8 @@ ModelTracer.prototype.UpdateUniforms = function ()
 		var i, material;
 		for (i = 0; i < model.MaterialCount (); i++) {
 			material = model.GetMaterial (i);
-			result.push (material.diffuse[0], material.diffuse[1], material.diffuse[2]);
-			result.push (material.reflection, 0.0, 0.0);
+			result.push (material.diffuse[0], material.diffuse[1], material.diffuse[2], 0.0);
+			result.push (material.reflection, 0.0, 0.0, 0.0);
 		}
 		return result;
 	}

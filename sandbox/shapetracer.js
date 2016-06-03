@@ -173,8 +173,9 @@ ShapeTracer.prototype.UpdateUniforms = function ()
 	function GetLightPosition (lightData)
 	{
 		var origo = new JSM.Coord2D (0.0, 0.0);
-		var lightPosition = JSM.CoordRotate2D (new JSM.Coord2D (1.0, 0.0), lightData.rotation, origo);
-		lightPosition = JSM.VectorSetLength2D (lightPosition, lightData.distance);
+		var lightPosition = new JSM.Coord2D (1.0, 0.0);
+		lightPosition.Rotate (lightData.rotation, origo);
+		lightPosition.SetLength (lightData.distance);
 		return new JSM.Coord (lightPosition.x, lightPosition.y, lightData.height);
 	}
 
